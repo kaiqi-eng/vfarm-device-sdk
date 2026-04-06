@@ -1,0 +1,150 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field
+
+
+DeviceType = Literal["gateway", "sensor", "controller", "actuator"]
+DeviceStatus = Literal["online", "offline", "maintenance", "error", "unknown"]
+ReadingStatus = Literal["ok", "warning", "error"]
+
+
+class DeviceLocation(BaseModel):
+    rack_id: str | None = Field(default=None, max_length=32)
+    node_id: str | None = Field(default=None, max_length=32)
+    position: str | None = Field(default=None, max_length=32)
+
+
+class DeviceCreate(BaseModel):
+    id: str = Field(pattern=r"^[a-zA-Z0-9\-_]+$", min_length=1, max_length=64)
+    farm_id: str = Field(min_length=1, max_length=64)
+    device_type: DeviceType
+    device_model: str | None = Field(default=None, max_length=32)
+    sensor_type_id: str | None = Field(default=None, max_length=32)
+    parent_device_id: str | None = Field(default=None, max_length=64)
+    location: DeviceLocation | None = None
+    capabilities: list[str] = Field(default_factory=list)
+    firmware_version: str | None = Field(default=None, max_length=16)
+    hardware_revision: str | None = Field(default=None, max_length=16)
+    mac_address: str | None = Field(default=None, pattern=r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
+    ip_address: str | None = None
+    config: dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class DeviceUpdate(BaseModel):
+    farm_id: str | None = Field(default=None, min_length=1, max_length=64)
+    device_model: str | None = Field(default=None, max_length=32)
+    sensor_type_id: str | None = Field(default=None, max_length=32)
+    parent_device_id: str | None = Field(default=None, max_length=64)
+    location: DeviceLocation | None = None
+    capabilities: list[str] | None = None
+    firmware_version: str | None = Field(default=None, max_length=16)
+    hardware_revision: str | None = Field(default=None, max_length=16)
+    mac_address: str | None = Field(default=None, pattern=r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
+    ip_address: str | None = None
+    config: dict[str, Any] | None = None
+    calibration_data: dict[str, Any] | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
+    status: Literal["online", "offline", "maintenance", "error"] | None = None
+
+
+class DeviceCreatedResponse(BaseModel):
+    id: str
+    created_at: datetime
+
+
+class DeviceResponse(BaseModel):
+    id: str
+    device_type: str
+    device_model: str | None = None
+    sensor_type_id: str | None = None
+    parent_device_id: str | None = None
+    child_device_count: int = 0
+    farm_id: str
+    rack_id: str | None = None
+    node_id: str | None = None
+    position: str | None = None
+    status: DeviceStatus | str
+    health_score: int | None = None
+    last_seen_at: datetime | None = None
+    last_reading_at: datetime | None = None
+    current_state: dict[str, Any] | None = None
+    capabilities: list[str] = Field(default_factory=list)
+    firmware_version: str | None = None
+    hardware_revision: str | None = None
+    mac_address: str | None = None
+    ip_address: str | None = None
+    config: dict[str, Any] = Field(default_factory=dict)
+    calibration_data: dict[str, Any] | None = None
+    tags: list[str] = Field(default_factory=list)
+    notes: str | None = None
+    installed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DeviceListResponse(BaseModel):
+    devices: list[DeviceResponse]
+    total: int
+    online_count: int
+    offline_count: int
+    registered_count: int
+    maintenance_count: int
+    error_count: int
+    unhealthy_count: int
+
+
+class EnsureDeviceResult(BaseModel):
+    created: bool
+    device: DeviceResponse
+    created_response: DeviceCreatedResponse | None = None
+
+
+class ReadingValue(BaseModel):
+    value: float | int | None = None
+    unit: str
+    status: ReadingStatus
+
+
+class IngestLocation(BaseModel):
+    farm_id: str
+    rack_id: str | None = None
+    node_id: str | None = None
+
+
+class IngestDeviceInfo(BaseModel):
+    firmware: str | None = None
+    uptime_s: int | None = None
+    wifi_rssi: int | None = None
+
+
+class IngestErrorInfo(BaseModel):
+    code: str
+    message: str
+
+
+class IngestReading(BaseModel):
+    temperature: ReadingValue | None = None
+    humidity: ReadingValue | None = None
+
+
+class IngestRequest(BaseModel):
+    schema_version: str = "1.0.0"
+    sensor_id: str
+    sensor_type: str
+    location: IngestLocation
+    timestamp: datetime
+    readings: IngestReading
+    device: IngestDeviceInfo | None = None
+    error: IngestErrorInfo | None = None
+
+
+class IngestResponse(BaseModel):
+    message: str
+    reading_id: int | None = None
+    device_id: str | None = None
