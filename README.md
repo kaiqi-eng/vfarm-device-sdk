@@ -58,12 +58,27 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `ingest(payload, auto_register=False)`
 - `health()`
 
+## End-to-end tests
+
+Run against a live vfarm API:
+
+```bash
+FARM_API_KEY=... SDK_E2E_BASE_URL=http://localhost:8003 pytest -q tests/e2e/test_sdk_e2e.py
+```
+
+Or from Docker (no local Python needed):
+
+```bash
+docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM_API_KEY=... -e SDK_E2E_BASE_URL=http://api:8000 -e SDK_E2E_SENSOR_TYPE=dht22 python:3.11-slim sh -lc "pip install -e .[dev] && pytest -q tests/e2e/test_sdk_e2e.py"
+```
+
 ## Design notes
 
 - Auth is handled with `X-Farm-Key`
 - Request/response models mirror the backend contract closely
 - `ensure_device()` makes registration workflow-level idempotent by handling `409` and then fetching the device
 - `ingest()` uses the same payload shape the repo's reader already sends
+- `ensure_device()` includes an ingest-based fallback for environments where `POST /api/v1/devices` is broken by DB/API schema drift
 
 ## Next steps
 

@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 DeviceType = Literal["gateway", "sensor", "controller", "actuator"]
 DeviceStatus = Literal["online", "offline", "maintenance", "error", "unknown"]
-ReadingStatus = Literal["ok", "warning", "error"]
+ReadingStatus = Literal["ok", "error"]
 
 
 class DeviceLocation(BaseModel):
@@ -113,12 +113,12 @@ class ReadingValue(BaseModel):
 
 class IngestLocation(BaseModel):
     farm_id: str
-    rack_id: str | None = None
-    node_id: str | None = None
+    rack_id: str
+    node_id: str
 
 
 class IngestDeviceInfo(BaseModel):
-    firmware: str | None = None
+    firmware: str
     uptime_s: int | None = None
     wifi_rssi: int | None = None
 
@@ -140,11 +140,10 @@ class IngestRequest(BaseModel):
     location: IngestLocation
     timestamp: datetime
     readings: IngestReading
-    device: IngestDeviceInfo | None = None
+    device: IngestDeviceInfo
     error: IngestErrorInfo | None = None
 
 
 class IngestResponse(BaseModel):
-    message: str
-    reading_id: int | None = None
-    device_id: str | None = None
+    id: int
+    received_at: datetime
