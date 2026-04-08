@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -10,11 +9,6 @@ import httpx
 from vfarm_device_sdk import (
     DeviceCreate,
     DeviceLocation,
-    IngestDeviceInfo,
-    IngestLocation,
-    IngestReading,
-    IngestRequest,
-    ReadingValue,
     VFarmClient,
 )
 
@@ -125,19 +119,17 @@ def test_sdk_ingest_round_trip() -> None:
             )
         )
 
-        ingest = client.ingest(
-            IngestRequest(
-                schema_version="1.0.0",
-                sensor_id=device_id,
-                sensor_type=sensor_type_id,
-                location=IngestLocation(farm_id=farm_id, rack_id="rack-b", node_id="node-2"),
-                timestamp=datetime.now(timezone.utc),
-                readings=IngestReading(
-                    temperature=ReadingValue(value=24.6, unit="celsius", status="ok"),
-                    humidity=ReadingValue(value=57.3, unit="percent_rh", status="ok"),
-                ),
-                device=IngestDeviceInfo(firmware="1.0.0", uptime_s=120, wifi_rssi=-55),
-            ),
+        ingest = client.ingest_reading(
+            sensor_id=device_id,
+            sensor_type=sensor_type_id,
+            farm_id=farm_id,
+            rack_id="rack-b",
+            node_id="node-2",
+            firmware="1.0.0",
+            temperature_value=24.6,
+            humidity_value=57.3,
+            uptime_s=120,
+            wifi_rssi=-55,
             auto_register=False,
         )
 
@@ -150,3 +142,46 @@ def test_sdk_ingest_round_trip() -> None:
         assert body["sensor_id"] == device_id
         assert body["temperature_status"] in ("ok", "error")
         assert body["humidity_status"] in ("ok", "error")
+
+
+def test_sdk_register_then_ingest_single_flow() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    farm_id = f"sdk-e2e-farm-{suffix}"
+    device_id = f"sdk-e2e-flow-{suffix}"
+    sensor_type_id = _resolve_sensor_type()
+    _ensure_farm(farm_id)
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        registration = client.ensure_device(
+            DeviceCreate(
+                id=device_id,
+                farm_id=farm_id,
+                device_type="sensor",
+                sensor_type_id=sensor_type_id,
+                device_model="DHT22",
+                location=DeviceLocation(rack_id="rack-c", node_id="node-3", position="p3"),
+                firmware_version="1.0.1",
+            )
+        )
+        assert registration.device.id == device_id
+
+        ingest = client.ingest_reading(
+            sensor_id=device_id,
+            sensor_type=sensor_type_id,
+            farm_id=farm_id,
+            rack_id="rack-c",
+            node_id="node-3",
+            firmware="1.0.1",
+            temperature_value=25.2,
+            humidity_value=53.8,
+            uptime_s=180,
+            wifi_rssi=-52,
+            auto_register=False,
+        )
+        assert ingest.id > 0
+
+        latest = _request("GET", "/api/v1/readings/latest", params={"sensor_id": device_id})
+        assert latest.status_code == 200, latest.text
+        body = latest.json()
+        assert body["sensor_id"] == device_id
+        assert body["firmware"] == "1.0.1"

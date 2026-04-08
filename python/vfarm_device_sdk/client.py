@@ -21,6 +21,7 @@ from .models import (
     DeviceUpdate,
     EnsureDeviceResult,
     IngestDeviceInfo,
+    IngestErrorInfo,
     IngestLocation,
     IngestReading,
     IngestRequest,
@@ -109,19 +110,6 @@ class VFarmClient:
         except ConflictError:
             device = self.get_device(payload.id)
             return EnsureDeviceResult(created=False, device=device)
-        except ValidationError as exc:
-            if not self._is_registration_schema_mismatch(exc):
-                raise
-
-            # Backend schema drift: registration endpoint fails because a newer
-            # API payload field does not exist in the active database schema.
-            try:
-                existing = self.get_device(payload.id)
-                return EnsureDeviceResult(created=False, device=existing)
-            except NotFoundError:
-                self._register_via_ingest_auto(payload)
-                created_device = self.get_device(payload.id)
-                return EnsureDeviceResult(created=True, device=created_device)
 
     def ingest(self, payload: IngestRequest, *, auto_register: bool = False) -> IngestResponse:
         path = "/api/v1/ingest"
@@ -134,47 +122,73 @@ class VFarmClient:
         )
         return IngestResponse.model_validate(data)
 
+    def ingest_reading(
+        self,
+        *,
+        sensor_id: str,
+        sensor_type: str,
+        farm_id: str,
+        rack_id: str,
+        node_id: str,
+        firmware: str,
+        temperature_value: float | int | None,
+        humidity_value: float | int | None,
+        temperature_status: str = "ok",
+        humidity_status: str = "ok",
+        uptime_s: int | None = None,
+        wifi_rssi: int | None = None,
+        timestamp: datetime | None = None,
+        schema_version: str = "1.0.0",
+        error_code: str | None = None,
+        error_message: str | None = None,
+        auto_register: bool = False,
+    ) -> IngestResponse:
+        """
+        Convenience wrapper around POST /api/v1/ingest.
+
+        This helper builds a valid IngestRequest from scalar arguments and sends
+        it through the same ingest endpoint as `ingest(...)`.
+        """
+        payload = IngestRequest(
+            schema_version=schema_version,
+            sensor_id=sensor_id,
+            sensor_type=sensor_type,
+            location=IngestLocation(
+                farm_id=farm_id,
+                rack_id=rack_id,
+                node_id=node_id,
+            ),
+            timestamp=timestamp or datetime.now(timezone.utc),
+            readings=IngestReading(
+                temperature=ReadingValue(
+                    value=temperature_value,
+                    unit="celsius",
+                    status=temperature_status,
+                ),
+                humidity=ReadingValue(
+                    value=humidity_value,
+                    unit="percent_rh",
+                    status=humidity_status,
+                ),
+            ),
+            device=IngestDeviceInfo(
+                firmware=firmware,
+                uptime_s=uptime_s,
+                wifi_rssi=wifi_rssi,
+            ),
+            error=(
+                IngestErrorInfo(code=error_code, message=error_message)
+                if error_code is not None
+                else None
+            ),
+        )
+        return self.ingest(payload, auto_register=auto_register)
+
     def health(self) -> dict[str, Any]:
         data = self._request("GET", "/api/v1/health")
         if not isinstance(data, dict):
             raise VFarmApiError("Unexpected health response", detail=data)
         return data
-
-    def _register_via_ingest_auto(self, payload: DeviceCreate) -> None:
-        location = payload.location
-
-        rack_id = location.rack_id if location and location.rack_id else "sdk-rack"
-        node_id = location.node_id if location and location.node_id else "sdk-node"
-        sensor_type = payload.sensor_type_id or "dht22"
-
-        self.ingest(
-            IngestRequest(
-                schema_version="1.0.0",
-                sensor_id=payload.id,
-                sensor_type=sensor_type,
-                location=IngestLocation(
-                    farm_id=payload.farm_id,
-                    rack_id=rack_id,
-                    node_id=node_id,
-                ),
-                timestamp=datetime.now(timezone.utc),
-                readings=IngestReading(
-                    temperature=ReadingValue(value=24.0, unit="celsius", status="ok"),
-                    humidity=ReadingValue(value=55.0, unit="percent_rh", status="ok"),
-                ),
-                device=IngestDeviceInfo(
-                    firmware=payload.firmware_version or "1.0.0",
-                    uptime_s=0,
-                    wifi_rssi=-50,
-                ),
-            ),
-            auto_register=True,
-        )
-
-    @staticmethod
-    def _is_registration_schema_mismatch(exc: ValidationError) -> bool:
-        detail = str(exc.detail or "").lower()
-        return "parent_device_id" in detail and "schema cache" in detail
 
     def _request(self, method: str, path: str, **kwargs: Any) -> Any:
         try:

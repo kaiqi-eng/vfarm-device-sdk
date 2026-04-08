@@ -56,6 +56,7 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `delete_device(device_id)`
 - `ensure_device(payload)`
 - `ingest(payload, auto_register=False)`
+- `ingest_reading(...)` convenience wrapper for `POST /api/v1/ingest`
 - `health()`
 
 ## End-to-end tests
@@ -78,7 +79,6 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - Request/response models mirror the backend contract closely
 - `ensure_device()` makes registration workflow-level idempotent by handling `409` and then fetching the device
 - `ingest()` uses the same payload shape the repo's reader already sends
-- `ensure_device()` includes an ingest-based fallback for environments where `POST /api/v1/devices` is broken by DB/API schema drift
 
 ## Next steps
 
