@@ -16,7 +16,11 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 
 ## Package layout
 
-- `python/vfarm_device_sdk/client.py`: sync HTTP client
+- `python/vfarm_device_sdk/core.py`: shared HTTP transport and error mapping
+- `python/vfarm_device_sdk/devices.py`: device registration and device management methods
+- `python/vfarm_device_sdk/ingestion.py`: ingestion methods and helper wrapper
+- `python/vfarm_device_sdk/commands.py`: command-layer methods for polling, create/update, and cancel
+- `python/vfarm_device_sdk/client.py`: facade `VFarmClient` that composes all API mixins
 - `python/vfarm_device_sdk/models.py`: typed Pydantic request/response models
 - `python/vfarm_device_sdk/exceptions.py`: API-specific exceptions
 - `examples/register_device.py`: registration + ingest example
@@ -57,6 +61,13 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `ensure_device(payload)`
 - `ingest(payload, auto_register=False)`
 - `ingest_reading(...)` convenience wrapper for `POST /api/v1/ingest`
+- `fetch_pending_commands(device_id, limit=10)`
+- `list_device_commands(device_id, status=None, limit=50, offset=0)`
+- `create_command(device_id, payload)`
+- `update_command_status(device_id, command_id, payload)`
+- `cancel_command(device_id, command_id)`
+- `enqueue_config_update(device_id, changes=...)`
+- `enqueue_restart_service(device_id, ...)`
 - `health()`
 
 ## End-to-end tests

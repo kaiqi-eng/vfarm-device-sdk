@@ -147,3 +147,93 @@ class IngestRequest(BaseModel):
 class IngestResponse(BaseModel):
     id: int
     received_at: datetime
+
+
+CommandType = Literal["config_update", "restart_service", "set_state", "set_value", "custom"]
+CommandStatus = Literal[
+    "pending",
+    "delivered",
+    "acknowledged",
+    "completed",
+    "failed",
+    "expired",
+    "cancelled",
+]
+
+
+class ConfigUpdatePayload(BaseModel):
+    changes: dict[str, Any] = Field(default_factory=dict)
+    merge_strategy: Literal["patch", "replace"] = "patch"
+
+
+class RestartServicePayload(BaseModel):
+    reason: str | None = None
+    delay_seconds: int = Field(default=5, ge=0, le=300)
+    graceful: bool = True
+
+
+class SetStatePayload(BaseModel):
+    target: str
+    state: Literal["on", "off"]
+    reason: str | None = None
+
+
+class SetValuePayload(BaseModel):
+    target: str
+    value: float
+    unit: str | None = None
+    reason: str | None = None
+
+
+class CustomPayload(BaseModel):
+    action: str
+    params: dict[str, Any] = Field(default_factory=dict)
+    reason: str | None = None
+
+
+class CommandCreate(BaseModel):
+    command_type: CommandType
+    payload: dict[str, Any] = Field(default_factory=dict)
+    priority: int = Field(default=100, ge=1, le=1000)
+    ttl_minutes: int = Field(default=60, ge=5, le=1440)
+    notes: str | None = None
+
+
+class CommandAcknowledge(BaseModel):
+    status: Literal["acknowledged", "completed", "failed"]
+    result: dict[str, Any] | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class CommandResponse(BaseModel):
+    id: str
+    device_id: str
+    command_type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    priority: int
+    status: str
+    created_at: datetime
+    expires_at: datetime
+    delivered_at: datetime | None = None
+    acknowledged_at: datetime | None = None
+    completed_at: datetime | None = None
+    result: dict[str, Any] | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    created_by: str | None = None
+    notes: str | None = None
+    automation_rule_id: str | None = None
+
+
+class CommandListResponse(BaseModel):
+    device_id: str
+    commands: list[CommandResponse]
+    total: int
+    pending_count: int
+
+
+class PendingCommandsResponse(BaseModel):
+    device_id: str
+    commands: list[CommandResponse]
+    poll_again_seconds: int = 30
