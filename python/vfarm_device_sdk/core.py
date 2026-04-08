@@ -65,7 +65,7 @@ class VFarmApiClient:
         if response.is_success:
             return payload
 
-        detail = payload.get("detail") if isinstance(payload, dict) else payload
+        detail = self._extract_error_detail(payload)
 
         if response.status_code == 401:
             raise AuthenticationError("Request was not authorized", status_code=401, detail=detail)
@@ -77,3 +77,16 @@ class VFarmApiClient:
             raise ValidationError("Request validation failed", status_code=response.status_code, detail=detail)
 
         raise VFarmApiError("API request failed", status_code=response.status_code, detail=detail)
+
+    @staticmethod
+    def _extract_error_detail(payload: Any) -> Any:
+        if not isinstance(payload, dict):
+            return payload
+        if "detail" in payload and payload["detail"] is not None:
+            return payload["detail"]
+
+        # Some vfarm endpoints return structured validation errors without `detail`.
+        for key in ("reason", "error", "message", "hint"):
+            if key in payload and payload[key]:
+                return payload
+        return payload

@@ -24,6 +24,7 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/models.py`: typed Pydantic request/response models
 - `python/vfarm_device_sdk/exceptions.py`: API-specific exceptions
 - `examples/register_device.py`: registration + ingest example
+- `docs/SDK_USAGE.md`: comprehensive usage documentation
 - `docs/bhavfarm-analysis.md`: notes from repo analysis
 
 ## Install locally
@@ -91,9 +92,34 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `ensure_device()` makes registration workflow-level idempotent by handling `409` and then fetching the device
 - `ingest()` uses the same payload shape the repo's reader already sends
 
-## Next steps
+## SDK roadmap
 
-- Add async client support for long-running agents and gateways
-- Add device commands, thresholds, capabilities, and events APIs
-- Add retries with exponential backoff for unstable edge connectivity
-- Add higher-level bootstrap helpers for farm provisioning and device activation
+### Phase 1 (done)
+
+- Core transport + typed errors
+- Device registration and lifecycle methods
+- Ingestion API wrappers (`ingest`, `ingest_reading`)
+- Command layer APIs (poll, create, update, cancel)
+- Docker-backed E2E coverage for current feature set
+
+### Phase 2 (next)
+
+- Device events API (`/api/v1/devices/{id}/events`)
+- Threshold management API (`/api/v1/devices/{id}/thresholds`)
+- Device capabilities API (`/api/v1/devices/{id}/capabilities`)
+- Sensor type and capability catalog APIs (`/api/v1/sensor-types`, `/api/v1/capabilities`, `/api/v1/capability-groups`)
+- Farm CRUD API (`/api/v1/farms`)
+
+### Phase 3 (automation + operations)
+
+- Automation engine SDK module (rules CRUD, history, enable/disable)
+- Alerting and webhook configuration APIs
+- Advanced command helpers (typed payload builders for `set_state`, `set_value`, `custom`)
+- Async client (`httpx.AsyncClient`) for gateways and high-throughput workloads
+
+### Phase 4 (developer experience)
+
+- Pagination iterators and filtering helpers
+- Retry/backoff policies with jitter and idempotency guidance
+- Stronger typed payload objects for command and automation flows
+- OpenAPI-driven contract checks in CI

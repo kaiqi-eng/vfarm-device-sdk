@@ -9,7 +9,6 @@ import pytest
 from vfarm_device_sdk import (
     CommandAcknowledge,
     CommandCreate,
-    ConflictError,
     DeviceCreate,
     DeviceLocation,
     DeviceUpdate,
@@ -39,14 +38,59 @@ def _sensor_type() -> str:
 
 
 def _ensure_farm(client: VFarmClient, farm_id: str) -> None:
-    try:
-        client._request(
-            "POST",
-            "/api/v1/farms",
-            json={"id": farm_id, "name": "SDK Full E2E Farm", "description": "Full SDK E2E coverage"},
+    client.ensure_farm(
+        farm_id=farm_id,
+        name="SDK Full E2E Farm",
+        description="Full SDK E2E coverage",
+    )
+
+
+def test_sdk_farm_crud_and_helpers() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    farm_id = f"sdk-full-farm-only-{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        created = client.create_farm(
+            farm_id=farm_id,
+            name="SDK Farm CRUD",
+            description="Created by farm E2E",
+            address="123 SDK Lane",
         )
-    except ConflictError:
-        pass
+        assert created.id == farm_id
+        assert created.is_active is True
+
+        fetched = client.get_farm(farm_id)
+        assert fetched.id == farm_id
+
+        updated = client.update_farm(
+            farm_id,
+            description="Updated by farm E2E",
+            address="456 Updated Ave",
+        )
+        assert updated.description == "Updated by farm E2E"
+        assert updated.address == "456 Updated Ave"
+
+        inactive = client.deactivate_farm(farm_id)
+        assert inactive.is_active is False
+        active = client.reactivate_farm(farm_id)
+        assert active.is_active is True
+
+        listed = client.list_farms(limit=10)
+        assert listed.total >= len(listed.farms)
+
+        first_iterated = next(client.iter_farms(page_size=1))
+        assert first_iterated.id
+
+        ensured = client.ensure_farm(
+            farm_id=farm_id,
+            name="Should Not Override",
+            description="No-op when already exists",
+        )
+        assert ensured.id == farm_id
+
+        client.delete_farm(farm_id)
+        with pytest.raises(NotFoundError):
+            client.get_farm(farm_id)
 
 
 def test_sdk_health_and_device_crud() -> None:
