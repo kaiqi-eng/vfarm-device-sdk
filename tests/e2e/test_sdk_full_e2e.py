@@ -37,6 +37,25 @@ def _sensor_type() -> str:
     return os.environ.get("SDK_E2E_SENSOR_TYPE", "dht22")
 
 
+def _sensor_type_for_ingest(client: VFarmClient) -> str:
+    preferred = _sensor_type()
+    try:
+        sensor_type = client._request("GET", f"/api/v1/sensor-types/{preferred}", timeout=60.0)
+        capabilities = {c["capability_id"] for c in sensor_type.get("capabilities", [])}
+        if {"temperature", "humidity"}.issubset(capabilities):
+            return preferred
+    except Exception:
+        pass
+
+    listing = client._request("GET", "/api/v1/sensor-types", params={"limit": 200, "offset": 0}, timeout=60.0)
+    for sensor_type in listing.get("sensor_types", []):
+        capabilities = {c["capability_id"] for c in sensor_type.get("capabilities", [])}
+        if {"temperature", "humidity"}.issubset(capabilities):
+            return sensor_type["id"]
+
+    raise RuntimeError("No sensor type with both temperature and humidity capabilities was found for E2E tests")
+
+
 def _ensure_farm(client: VFarmClient, farm_id: str) -> None:
     client.ensure_farm(
         farm_id=farm_id,
@@ -142,13 +161,14 @@ def test_sdk_low_level_ingest_api() -> None:
     device_id = f"sdk-full-ingest-{suffix}"
 
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        sensor_type = _sensor_type_for_ingest(client)
         _ensure_farm(client, farm_id)
         client.ensure_device(
             DeviceCreate(
                 id=device_id,
                 farm_id=farm_id,
                 device_type="sensor",
-                sensor_type_id=_sensor_type(),
+                sensor_type_id=sensor_type,
                 device_model="DHT22",
                 location=DeviceLocation(rack_id="rack-y", node_id="node-y", position="py"),
                 firmware_version="1.0.0",
@@ -159,7 +179,7 @@ def test_sdk_low_level_ingest_api() -> None:
             IngestRequest(
                 schema_version="1.0.0",
                 sensor_id=device_id,
-                sensor_type=_sensor_type(),
+                sensor_type=sensor_type,
                 location=IngestLocation(farm_id=farm_id, rack_id="rack-y", node_id="node-y"),
                 readings=IngestReading(
                     temperature=ReadingValue(value=23.9, unit="celsius", status="ok"),
@@ -172,8 +192,62 @@ def test_sdk_low_level_ingest_api() -> None:
         )
         assert ingest.id > 0
 
-        latest = client._request("GET", "/api/v1/readings/latest", params={"sensor_id": device_id})
-        assert latest["sensor_id"] == device_id
+        latest = client.get_latest_reading(device_id)
+        assert latest.sensor_id == device_id
+
+
+def test_sdk_readings_analytics_api() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    farm_id = f"sdk-full-farm-{suffix}"
+    device_id = f"sdk-full-analytics-{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        sensor_type = _sensor_type_for_ingest(client)
+        _ensure_farm(client, farm_id)
+        client.ensure_device(
+            DeviceCreate(
+                id=device_id,
+                farm_id=farm_id,
+                device_type="sensor",
+                sensor_type_id=sensor_type,
+                device_model="DHT22",
+                location=DeviceLocation(rack_id="rack-a", node_id="node-a", position="pa"),
+                firmware_version="1.0.0",
+            )
+        )
+
+        client.ingest_reading(
+            sensor_id=device_id,
+            sensor_type=sensor_type,
+            farm_id=farm_id,
+            rack_id="rack-a",
+            node_id="node-a",
+            firmware="1.0.0",
+            temperature_value=22.4,
+            humidity_value=60.1,
+            uptime_s=60,
+            wifi_rssi=-42,
+            auto_register=False,
+        )
+
+        latest = client.get_latest_reading(device_id)
+        assert latest.sensor_id == device_id
+
+        readings = client.list_readings(device_id, limit=20)
+        assert readings.sensor_id == device_id
+        assert readings.count >= 1
+        assert any(r.id == latest.id for r in readings.readings)
+
+        stats = client.get_reading_stats(device_id, window="1h")
+        assert stats.sensor_id == device_id
+        assert stats.window == "1h"
+        assert stats.total_readings >= 1
+
+        analytics = client.get_readings_analytics(device_id, window="1h", recent_limit=20)
+        assert analytics.sensor_id == device_id
+        assert analytics.latest is not None
+        assert analytics.recent.count >= 1
+        assert analytics.stats.total_readings >= 1
 
 
 def test_sdk_generic_command_api_and_status_filters() -> None:

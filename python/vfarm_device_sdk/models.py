@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 DeviceType = Literal["gateway", "sensor", "controller", "actuator"]
 DeviceStatus = Literal["online", "offline", "maintenance", "error", "unknown"]
 ReadingStatus = Literal["ok", "error"]
+StatsWindow = Literal["1h", "6h", "24h", "7d", "30d"]
 
 
 class DeviceLocation(BaseModel):
@@ -177,6 +178,68 @@ class IngestRequest(BaseModel):
 class IngestResponse(BaseModel):
     id: int
     received_at: datetime
+
+
+class ReadingRecordResponse(BaseModel):
+    id: int
+    sensor_id: str
+    reading_ts: datetime
+    received_at: datetime
+    temperature_c: float | None = None
+    temperature_status: str
+    humidity_rh: float | None = None
+    humidity_status: str
+    firmware: str
+    uptime_s: int | None = None
+    wifi_rssi: int | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class LatestReadingResponse(ReadingRecordResponse):
+    pass
+
+
+class ReadingsListResponse(BaseModel):
+    sensor_id: str
+    from_: datetime = Field(alias="from")
+    to: datetime
+    count: int
+    readings: list[ReadingRecordResponse]
+
+    model_config = {"populate_by_name": True}
+
+
+class TemperatureStatsValues(BaseModel):
+    min_c: float | None = None
+    max_c: float | None = None
+    avg_c: float | None = None
+
+
+class HumidityStatsValues(BaseModel):
+    min_rh: float | None = None
+    max_rh: float | None = None
+    avg_rh: float | None = None
+
+
+class ReadingStatsResponse(BaseModel):
+    sensor_id: str
+    window: StatsWindow | str
+    from_: datetime = Field(alias="from")
+    to: datetime
+    total_readings: int
+    error_readings: int
+    temperature: TemperatureStatsValues
+    humidity: HumidityStatsValues
+
+    model_config = {"populate_by_name": True}
+
+
+class ReadingAnalyticsSnapshot(BaseModel):
+    sensor_id: str
+    latest: LatestReadingResponse | None = None
+    recent: ReadingsListResponse
+    stats: ReadingStatsResponse
 
 
 CommandType = Literal["config_update", "restart_service", "set_state", "set_value", "custom"]

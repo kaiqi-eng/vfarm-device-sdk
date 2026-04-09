@@ -56,6 +56,25 @@ def _resolve_sensor_type() -> str:
     return os.environ.get("SDK_E2E_SENSOR_TYPE", "dht22")
 
 
+def _resolve_sensor_type_for_ingest(client: VFarmClient) -> str:
+    preferred = _resolve_sensor_type()
+    try:
+        sensor_type = client._request("GET", f"/api/v1/sensor-types/{preferred}", timeout=60.0)
+        capabilities = {c["capability_id"] for c in sensor_type.get("capabilities", [])}
+        if {"temperature", "humidity"}.issubset(capabilities):
+            return preferred
+    except Exception:
+        pass
+
+    listing = client._request("GET", "/api/v1/sensor-types", params={"limit": 200, "offset": 0}, timeout=60.0)
+    for sensor_type in listing.get("sensor_types", []):
+        capabilities = {c["capability_id"] for c in sensor_type.get("capabilities", [])}
+        if {"temperature", "humidity"}.issubset(capabilities):
+            return sensor_type["id"]
+
+    raise RuntimeError("No sensor type with both temperature and humidity capabilities was found for E2E tests")
+
+
 def test_sdk_device_registration_and_lookup() -> None:
     suffix = uuid.uuid4().hex[:8]
     farm_id = f"sdk-e2e-farm-{suffix}"
@@ -104,9 +123,8 @@ def test_sdk_ingest_round_trip() -> None:
     farm_id = f"sdk-e2e-farm-{suffix}"
     device_id = f"sdk-e2e-ingest-{suffix}"
     _ensure_farm(farm_id)
-    sensor_type_id = _resolve_sensor_type()
-
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        sensor_type_id = _resolve_sensor_type_for_ingest(client)
         client.ensure_device(
             DeviceCreate(
                 id=device_id,
@@ -148,10 +166,10 @@ def test_sdk_register_then_ingest_single_flow() -> None:
     suffix = uuid.uuid4().hex[:8]
     farm_id = f"sdk-e2e-farm-{suffix}"
     device_id = f"sdk-e2e-flow-{suffix}"
-    sensor_type_id = _resolve_sensor_type()
     _ensure_farm(farm_id)
 
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        sensor_type_id = _resolve_sensor_type_for_ingest(client)
         registration = client.ensure_device(
             DeviceCreate(
                 id=device_id,
