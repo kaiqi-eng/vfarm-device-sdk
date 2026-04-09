@@ -11,14 +11,29 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `GET /api/v1/devices`
 - `PATCH /api/v1/devices/{id}`
 - `DELETE /api/v1/devices/{id}`
+- `GET /api/v1/farms`
+- `GET /api/v1/farms/{id}`
+- `POST /api/v1/farms`
+- `PATCH /api/v1/farms/{id}`
+- `DELETE /api/v1/farms/{id}`
 - `POST /api/v1/ingest`
+- `GET /api/v1/readings/latest`
+- `GET /api/v1/readings`
+- `GET /api/v1/readings/stats`
 - `GET /api/v1/health`
+- `GET /api/v1/devices/{id}/commands/pending`
+- `GET /api/v1/devices/{id}/commands`
+- `POST /api/v1/devices/{id}/commands`
+- `PATCH /api/v1/devices/{id}/commands/{cmd_id}`
+- `DELETE /api/v1/devices/{id}/commands/{cmd_id}`
 
 ## Package layout
 
 - `python/vfarm_device_sdk/core.py`: shared HTTP transport and error mapping
 - `python/vfarm_device_sdk/devices.py`: device registration and device management methods
+- `python/vfarm_device_sdk/farms.py`: farm CRUD and helper methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion methods and helper wrapper
+- `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
 - `python/vfarm_device_sdk/commands.py`: command-layer methods for polling, create/update, and cancel
 - `python/vfarm_device_sdk/client.py`: facade `VFarmClient` that composes all API mixins
 - `python/vfarm_device_sdk/models.py`: typed Pydantic request/response models
@@ -60,8 +75,21 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `update_device(device_id, payload)`
 - `delete_device(device_id)`
 - `ensure_device(payload)`
+- `list_farms(...)`
+- `get_farm(farm_id)`
+- `create_farm(farm_id, name, description=None, address=None)`
+- `update_farm(farm_id, ...)`
+- `delete_farm(farm_id)`
+- `reactivate_farm(farm_id)`
+- `deactivate_farm(farm_id)`
+- `ensure_farm(farm_id, name, ...)`
+- `iter_farms(...)`
 - `ingest(payload, auto_register=False)`
 - `ingest_reading(...)` convenience wrapper for `POST /api/v1/ingest`
+- `get_latest_reading(sensor_id)`
+- `list_readings(sensor_id, from_time=None, to_time=None, limit=100, status=None)`
+- `get_reading_stats(sensor_id, window="24h")`
+- `get_readings_analytics(sensor_id, window="24h", recent_limit=100)`
 - `fetch_pending_commands(device_id, limit=10)`
 - `list_device_commands(device_id, status=None, limit=50, offset=0)`
 - `create_command(device_id, payload)`
@@ -98,7 +126,9 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 
 - Core transport + typed errors
 - Device registration and lifecycle methods
+- Farm CRUD and helper methods
 - Ingestion API wrappers (`ingest`, `ingest_reading`)
+- Readings/analytics wrappers (`get_latest_reading`, `list_readings`, `get_reading_stats`, `get_readings_analytics`)
 - Command layer APIs (poll, create, update, cancel)
 - Docker-backed E2E coverage for current feature set
 
@@ -108,7 +138,6 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - Threshold management API (`/api/v1/devices/{id}/thresholds`)
 - Device capabilities API (`/api/v1/devices/{id}/capabilities`)
 - Sensor type and capability catalog APIs (`/api/v1/sensor-types`, `/api/v1/capabilities`, `/api/v1/capability-groups`)
-- Farm CRUD API (`/api/v1/farms`)
 
 ### Phase 3 (automation + operations)
 

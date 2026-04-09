@@ -128,6 +128,53 @@ ingest_result = client.ingest_reading(
 print(ingest_result.id, ingest_result.received_at)
 ```
 
+## Farm APIs
+
+Methods:
+
+- `list_farms(is_active=None, limit=100, offset=0)`
+- `get_farm(farm_id)`
+- `create_farm(farm_id, name, description=None, address=None)`
+- `update_farm(farm_id, name=None, description=None, address=None, is_active=None)`
+- `delete_farm(farm_id)`
+- `reactivate_farm(farm_id)`
+- `deactivate_farm(farm_id)`
+- `ensure_farm(farm_id=..., name=..., description=None, address=None)`
+- `iter_farms(is_active=None, page_size=100)`
+
+Example:
+
+```python
+farm = client.ensure_farm(
+    farm_id="farm-alpha",
+    name="Farm Alpha",
+    description="Primary farm",
+)
+
+farm = client.update_farm("farm-alpha", address="123 Greenhouse Rd")
+print(farm.id, farm.is_active)
+```
+
+## Readings and analytics APIs
+
+Methods:
+
+- `get_latest_reading(sensor_id)`
+- `list_readings(sensor_id, from_time=None, to_time=None, limit=100, status=None)`
+- `get_reading_stats(sensor_id, window="24h")` where window is `1h | 6h | 24h | 7d | 30d`
+- `get_readings_analytics(sensor_id, window="24h", recent_limit=100)`
+
+Example:
+
+```python
+latest = client.get_latest_reading("sensor-001")
+history = client.list_readings("sensor-001", limit=50)
+stats = client.get_reading_stats("sensor-001", window="1h")
+
+snapshot = client.get_readings_analytics("sensor-001", window="1h", recent_limit=50)
+print(snapshot.sensor_id, snapshot.stats.total_readings)
+```
+
 ## Command layer APIs
 
 Reader polling and command execution support:
@@ -200,7 +247,9 @@ except VFarmApiError as exc:
 Commonly used:
 
 - Device models: `DeviceCreate`, `DeviceUpdate`, `DeviceResponse`, `DeviceLocation`
+- Farm models: `FarmCreate`, `FarmUpdate`, `FarmResponse`, `FarmListResponse`
 - Ingestion models: `IngestRequest`, `IngestReading`, `ReadingValue`, `IngestDeviceInfo`
+- Readings models: `LatestReadingResponse`, `ReadingsListResponse`, `ReadingStatsResponse`, `ReadingAnalyticsSnapshot`
 - Command models: `CommandCreate`, `CommandAcknowledge`, `CommandResponse`, `PendingCommandsResponse`
 
 These are all exported from `vfarm_device_sdk`.
@@ -223,7 +272,9 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 
 - `python/vfarm_device_sdk/core.py`: shared transport and HTTP error mapping
 - `python/vfarm_device_sdk/devices.py`: device API methods
+- `python/vfarm_device_sdk/farms.py`: farm API methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion API methods
+- `python/vfarm_device_sdk/readings.py`: readings and analytics API methods
 - `python/vfarm_device_sdk/commands.py`: command API methods
 - `python/vfarm_device_sdk/client.py`: composed `VFarmClient`
 - `python/vfarm_device_sdk/models.py`: typed request/response models
