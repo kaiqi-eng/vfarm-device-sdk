@@ -106,6 +106,25 @@ class EnsureDeviceResult(BaseModel):
     created_response: DeviceCreatedResponse | None = None
 
 
+class DeviceEventResponse(BaseModel):
+    id: int
+    device_id: str
+    event_type: str
+    event_category: str
+    severity: str
+    event_data: dict[str, Any] | None = None
+    previous_state: dict[str, Any] | None = None
+    source: str | None = None
+    correlation_id: str | None = None
+    occurred_at: datetime
+
+
+class DeviceEventsListResponse(BaseModel):
+    device_id: str
+    events: list[DeviceEventResponse]
+    total: int
+
+
 class FarmCreate(BaseModel):
     id: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_\-]*$", min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from datetime import datetime, timezone
+from itertools import islice
 
 import pytest
 
@@ -308,3 +309,46 @@ def test_sdk_generic_command_api_and_status_filters() -> None:
 
         failed_list = client.list_device_commands(device_id, status="failed", limit=20)
         assert any(c.id == created.id for c in failed_list.commands)
+
+
+def test_sdk_device_events_api() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    farm_id = f"sdk-full-farm-{suffix}"
+    device_id = f"sdk-full-events-{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        _ensure_farm(client, farm_id)
+        client.ensure_device(
+            DeviceCreate(
+                id=device_id,
+                farm_id=farm_id,
+                device_type="sensor",
+                sensor_type_id=_sensor_type(),
+                device_model="DHT22",
+                location=DeviceLocation(rack_id="rack-e", node_id="node-e", position="pe"),
+                firmware_version="1.0.0",
+            )
+        )
+
+        client.create_command(
+            device_id,
+            CommandCreate(
+                command_type="restart_service",
+                payload={"reason": "events e2e", "delay_seconds": 1, "graceful": True},
+                priority=100,
+                ttl_minutes=30,
+                notes="events coverage",
+            ),
+        )
+
+        events = client.get_device_events(device_id, limit=20)
+        assert events.device_id == device_id
+        assert events.total >= len(events.events)
+        assert any(e.event_type == "command_created" for e in events.events)
+
+        latest = client.get_latest_device_event(device_id)
+        assert latest is not None
+        assert latest.device_id == device_id
+
+        first_events = list(islice(client.iter_device_events(device_id, page_size=5), 5))
+        assert len(first_events) >= 1

@@ -11,6 +11,7 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `GET /api/v1/devices`
 - `PATCH /api/v1/devices/{id}`
 - `DELETE /api/v1/devices/{id}`
+- `GET /api/v1/devices/{id}/events`
 - `GET /api/v1/farms`
 - `GET /api/v1/farms/{id}`
 - `POST /api/v1/farms`
@@ -31,6 +32,7 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 
 - `python/vfarm_device_sdk/core.py`: shared HTTP transport and error mapping
 - `python/vfarm_device_sdk/devices.py`: device registration and device management methods
+- `python/vfarm_device_sdk/events.py`: device event history methods and iterator helpers
 - `python/vfarm_device_sdk/farms.py`: farm CRUD and helper methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion methods and helper wrapper
 - `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
@@ -75,6 +77,9 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `update_device(device_id, payload)`
 - `delete_device(device_id)`
 - `ensure_device(payload)`
+- `get_device_events(device_id, event_type=None, severity=None, limit=100, offset=0)`
+- `iter_device_events(device_id, event_type=None, severity=None, page_size=100)`
+- `get_latest_device_event(device_id, event_type=None, severity=None)`
 - `list_farms(...)`
 - `get_farm(farm_id)`
 - `create_farm(farm_id, name, description=None, address=None)`
@@ -126,6 +131,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 
 - Core transport + typed errors
 - Device registration and lifecycle methods
+- Device events APIs (`get_device_events`, `iter_device_events`, `get_latest_device_event`)
 - Farm CRUD and helper methods
 - Ingestion API wrappers (`ingest`, `ingest_reading`)
 - Readings/analytics wrappers (`get_latest_reading`, `list_readings`, `get_reading_stats`, `get_readings_analytics`)
@@ -134,7 +140,6 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 
 ### Phase 2 (next)
 
-- Device events API (`/api/v1/devices/{id}/events`)
 - Threshold management API (`/api/v1/devices/{id}/thresholds`)
 - Device capabilities API (`/api/v1/devices/{id}/capabilities`)
 - Sensor type and capability catalog APIs (`/api/v1/sensor-types`, `/api/v1/capabilities`, `/api/v1/capability-groups`)

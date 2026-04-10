@@ -155,6 +155,25 @@ farm = client.update_farm("farm-alpha", address="123 Greenhouse Rd")
 print(farm.id, farm.is_active)
 ```
 
+## Device events APIs
+
+Methods:
+
+- `get_device_events(device_id, event_type=None, severity=None, limit=100, offset=0)`
+- `iter_device_events(device_id, event_type=None, severity=None, page_size=100)`
+- `get_latest_device_event(device_id, event_type=None, severity=None)`
+
+Example:
+
+```python
+events = client.get_device_events("sensor-001", limit=20)
+print(events.total)
+
+latest = client.get_latest_device_event("sensor-001")
+if latest:
+    print(latest.event_type, latest.severity, latest.occurred_at)
+```
+
 ## Readings and analytics APIs
 
 Methods:
@@ -247,6 +266,7 @@ except VFarmApiError as exc:
 Commonly used:
 
 - Device models: `DeviceCreate`, `DeviceUpdate`, `DeviceResponse`, `DeviceLocation`
+- Device event models: `DeviceEventResponse`, `DeviceEventsListResponse`
 - Farm models: `FarmCreate`, `FarmUpdate`, `FarmResponse`, `FarmListResponse`
 - Ingestion models: `IngestRequest`, `IngestReading`, `ReadingValue`, `IngestDeviceInfo`
 - Readings models: `LatestReadingResponse`, `ReadingsListResponse`, `ReadingStatsResponse`, `ReadingAnalyticsSnapshot`
@@ -272,6 +292,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 
 - `python/vfarm_device_sdk/core.py`: shared transport and HTTP error mapping
 - `python/vfarm_device_sdk/devices.py`: device API methods
+- `python/vfarm_device_sdk/events.py`: device events API methods
 - `python/vfarm_device_sdk/farms.py`: farm API methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion API methods
 - `python/vfarm_device_sdk/readings.py`: readings and analytics API methods
