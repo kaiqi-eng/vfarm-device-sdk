@@ -174,6 +174,45 @@ if latest:
     print(latest.event_type, latest.severity, latest.occurred_at)
 ```
 
+## Device thresholds APIs
+
+Methods:
+
+- `list_device_thresholds(device_id)`
+- `get_device_threshold(device_id, metric)`
+- `create_device_threshold(device_id, payload)`
+- `update_device_threshold(device_id, metric, payload)`
+- `delete_device_threshold(device_id, metric)`
+- `set_metric_limits(device_id, metric=..., min_value=None, max_value=None, severity=\"warning\", cooldown_minutes=15, enabled=True)`
+- `set_temperature_limits(device_id, min_c=None, max_c=None, severity=\"warning\", cooldown_minutes=15, enabled=True)`
+
+Example:
+
+```python
+from vfarm_device_sdk import DeviceThresholdCreate, DeviceThresholdUpdate
+
+created = client.create_device_threshold(
+    "sensor-001",
+    DeviceThresholdCreate(
+        metric="temperature",
+        min_value=18.0,
+        max_value=30.0,
+        severity="warning",
+        cooldown_minutes=10,
+        enabled=True,
+    ),
+)
+
+updated = client.update_device_threshold(
+    "sensor-001",
+    "temperature",
+    DeviceThresholdUpdate(max_value=32.0, severity="error"),
+)
+
+helper = client.set_temperature_limits("sensor-001", min_c=16.0, max_c=31.0)
+print(created.metric, updated.max_value, helper.cooldown_minutes)
+```
+
 ## Readings and analytics APIs
 
 Methods:
@@ -267,6 +306,7 @@ Commonly used:
 
 - Device models: `DeviceCreate`, `DeviceUpdate`, `DeviceResponse`, `DeviceLocation`
 - Device event models: `DeviceEventResponse`, `DeviceEventsListResponse`
+- Device threshold models: `DeviceThresholdCreate`, `DeviceThresholdUpdate`, `DeviceThresholdResponse`, `DeviceThresholdListResponse`
 - Farm models: `FarmCreate`, `FarmUpdate`, `FarmResponse`, `FarmListResponse`
 - Ingestion models: `IngestRequest`, `IngestReading`, `ReadingValue`, `IngestDeviceInfo`
 - Readings models: `LatestReadingResponse`, `ReadingsListResponse`, `ReadingStatsResponse`, `ReadingAnalyticsSnapshot`
@@ -293,6 +333,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `python/vfarm_device_sdk/core.py`: shared transport and HTTP error mapping
 - `python/vfarm_device_sdk/devices.py`: device API methods
 - `python/vfarm_device_sdk/events.py`: device events API methods
+- `python/vfarm_device_sdk/thresholds.py`: device thresholds API methods
 - `python/vfarm_device_sdk/farms.py`: farm API methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion API methods
 - `python/vfarm_device_sdk/readings.py`: readings and analytics API methods

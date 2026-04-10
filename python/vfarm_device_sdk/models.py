@@ -125,6 +125,42 @@ class DeviceEventsListResponse(BaseModel):
     total: int
 
 
+class DeviceThresholdCreate(BaseModel):
+    metric: str = Field(min_length=1, max_length=32)
+    min_value: float | None = None
+    max_value: float | None = None
+    severity: Literal["warning", "error", "critical"] = "warning"
+    cooldown_minutes: int = Field(default=15, ge=1, le=1440)
+    enabled: bool = True
+
+
+class DeviceThresholdUpdate(BaseModel):
+    min_value: float | None = None
+    max_value: float | None = None
+    severity: Literal["warning", "error", "critical"] | None = None
+    cooldown_minutes: int | None = Field(default=None, ge=1, le=1440)
+    enabled: bool | None = None
+
+
+class DeviceThresholdResponse(BaseModel):
+    id: str
+    device_id: str
+    metric: str
+    min_value: float | None = None
+    max_value: float | None = None
+    severity: str
+    cooldown_minutes: int
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class DeviceThresholdListResponse(BaseModel):
+    device_id: str
+    thresholds: list[DeviceThresholdResponse]
+    total: int
+
+
 class FarmCreate(BaseModel):
     id: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_\-]*$", min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)

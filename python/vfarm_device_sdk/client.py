@@ -7,12 +7,14 @@ from .events import DeviceEventsApiMixin
 from .farms import FarmApiMixin
 from .ingestion import IngestionApiMixin
 from .readings import ReadingsApiMixin
+from .thresholds import DeviceThresholdsApiMixin
 
 
 class VFarmClient(
     CommandApiMixin,
     DeviceApiMixin,
     DeviceEventsApiMixin,
+    DeviceThresholdsApiMixin,
     FarmApiMixin,
     IngestionApiMixin,
     ReadingsApiMixin,
