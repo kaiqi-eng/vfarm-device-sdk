@@ -46,7 +46,12 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/client.py`: facade `VFarmClient` that composes all API mixins
 - `python/vfarm_device_sdk/models.py`: typed Pydantic request/response models
 - `python/vfarm_device_sdk/exceptions.py`: API-specific exceptions
-- `examples/register_device.py`: registration + ingest example
+- `examples/register_device.py`: device registration + ingest + latest reading example
+- `examples/farms_example.py`: farm CRUD and iteration example
+- `examples/readings_analytics_example.py`: latest/history/stats/analytics snapshot example
+- `examples/events_example.py`: device event history and iterator example
+- `examples/thresholds_example.py`: threshold CRUD and helper example
+- `examples/commands_example.py`: command lifecycle example
 - `docs/SDK_USAGE.md`: comprehensive usage documentation
 - `docs/bhavfarm-analysis.md`: notes from repo analysis
 
