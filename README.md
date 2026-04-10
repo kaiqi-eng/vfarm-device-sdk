@@ -17,6 +17,10 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `POST /api/v1/devices/{id}/thresholds`
 - `PATCH /api/v1/devices/{id}/thresholds/{metric}`
 - `DELETE /api/v1/devices/{id}/thresholds/{metric}`
+- `GET /api/v1/devices/{id}/capabilities`
+- `POST /api/v1/devices/{id}/capabilities`
+- `PATCH /api/v1/devices/{id}/capabilities/{capability_id}`
+- `DELETE /api/v1/devices/{id}/capabilities/{capability_id}`
 - `GET /api/v1/farms`
 - `GET /api/v1/farms/{id}`
 - `POST /api/v1/farms`
@@ -39,6 +43,7 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/devices.py`: device registration and device management methods
 - `python/vfarm_device_sdk/events.py`: device event history methods and iterator helpers
 - `python/vfarm_device_sdk/thresholds.py`: device threshold CRUD and convenience helpers
+- `python/vfarm_device_sdk/device_capabilities.py`: per-device capability override and calibration helpers
 - `python/vfarm_device_sdk/farms.py`: farm CRUD and helper methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion methods and helper wrapper
 - `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
@@ -98,6 +103,12 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `delete_device_threshold(device_id, metric)`
 - `set_metric_limits(device_id, metric, min_value=None, max_value=None, ...)`
 - `set_temperature_limits(device_id, min_c=None, max_c=None, ...)`
+- `list_device_capabilities(device_id)`
+- `create_device_capability_override(device_id, payload)`
+- `update_device_capability_override(device_id, capability_id, payload)`
+- `delete_device_capability_override(device_id, capability_id)`
+- `upsert_device_capability_override(device_id, capability_id, ...)`
+- `calibrate_device_capability(device_id, capability_id, offset=..., scale=...)`
 - `list_farms(...)`
 - `get_farm(farm_id)`
 - `create_farm(farm_id, name, description=None, address=None)`
@@ -151,6 +162,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - Device registration and lifecycle methods
 - Device events APIs (`get_device_events`, `iter_device_events`, `get_latest_device_event`)
 - Device thresholds APIs (`list_device_thresholds`, `get_device_threshold`, `create/update/delete`, helper upserts)
+- Device capabilities APIs (`list_device_capabilities`, override CRUD, calibration/upsert helpers)
 - Farm CRUD and helper methods
 - Ingestion API wrappers (`ingest`, `ingest_reading`)
 - Readings/analytics wrappers (`get_latest_reading`, `list_readings`, `get_reading_stats`, `get_readings_analytics`)
@@ -159,7 +171,6 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 
 ### Phase 2 (next)
 
-- Device capabilities API (`/api/v1/devices/{id}/capabilities`)
 - Sensor type and capability catalog APIs (`/api/v1/sensor-types`, `/api/v1/capabilities`, `/api/v1/capability-groups`)
 
 ### Phase 3 (automation + operations)

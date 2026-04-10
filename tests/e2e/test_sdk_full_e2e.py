@@ -11,6 +11,8 @@ from vfarm_device_sdk import (
     CommandAcknowledge,
     CommandCreate,
     DeviceCreate,
+    DeviceCapabilityCreate,
+    DeviceCapabilityUpdate,
     DeviceLocation,
     DeviceThresholdUpdate,
     DeviceUpdate,
@@ -418,3 +420,87 @@ def test_sdk_device_thresholds_api() -> None:
         client.delete_device_threshold(device_id, "temperature")
         listed_after_delete = client.list_device_thresholds(device_id)
         assert all(t.metric != "temperature" for t in listed_after_delete.thresholds)
+
+
+def test_sdk_device_capabilities_api() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    farm_id = f"sdk-full-farm-{suffix}"
+    device_id = f"sdk-full-capabilities-{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        _ensure_farm(client, farm_id)
+        client.ensure_device(
+            DeviceCreate(
+                id=device_id,
+                farm_id=farm_id,
+                device_type="sensor",
+                sensor_type_id=_sensor_type(),
+                device_model="DHT22",
+                location=DeviceLocation(rack_id="rack-cap", node_id="node-cap", position="pc"),
+                firmware_version="1.0.0",
+            )
+        )
+
+        initial = client.list_device_capabilities(device_id)
+        assert initial.device_id == device_id
+        assert initial.total >= 1
+        target_capability = initial.capabilities[0].capability_id
+
+        created = client.create_device_capability_override(
+            device_id,
+            payload=DeviceCapabilityCreate(
+                capability_id=target_capability,
+                calibration_offset=0.4,
+                calibration_scale=1.01,
+                custom_min=-5.0,
+                custom_max=45.0,
+                enabled=True,
+                notes="capability override e2e",
+            ),
+        )
+        assert created.capability_id == target_capability
+        assert created.source == "device_override"
+
+        updated = client.update_device_capability_override(
+            device_id,
+            target_capability,
+            DeviceCapabilityUpdate(
+                calibration_offset=0.2,
+                calibration_scale=0.99,
+                notes="updated capability override",
+            ),
+        )
+        assert updated.calibration_offset == 0.2
+        assert updated.calibration_scale == 0.99
+
+        upserted = client.upsert_device_capability_override(
+            device_id,
+            capability_id=target_capability,
+            calibration_offset=0.1,
+            calibration_scale=1.0,
+            custom_min=-3.0,
+            custom_max=40.0,
+            enabled=True,
+            notes="upsert override",
+        )
+        assert upserted.custom_min == -3.0
+        assert upserted.custom_max == 40.0
+
+        calibrated = client.calibrate_device_capability(
+            device_id,
+            target_capability,
+            offset=0.05,
+            scale=1.0,
+            notes="calibration helper",
+        )
+        assert calibrated.calibration_offset == 0.05
+
+        listed_after = client.list_device_capabilities(device_id)
+        target_rows = [c for c in listed_after.capabilities if c.capability_id == target_capability]
+        assert len(target_rows) >= 1
+        assert target_rows[0].source in ("device_override", "sensor_type", "legacy")
+
+        client.delete_device_capability_override(device_id, target_capability)
+        listed_final = client.list_device_capabilities(device_id)
+        target_final = [c for c in listed_final.capabilities if c.capability_id == target_capability]
+        assert len(target_final) >= 1

@@ -161,6 +161,56 @@ class DeviceThresholdListResponse(BaseModel):
     total: int
 
 
+class DeviceCapabilityCreate(BaseModel):
+    capability_id: str = Field(min_length=1, max_length=32)
+    calibration_offset: float = 0.0
+    calibration_scale: float = Field(default=1.0, gt=0)
+    custom_min: float | None = None
+    custom_max: float | None = None
+    enabled: bool = True
+    notes: str | None = None
+
+
+class DeviceCapabilityUpdate(BaseModel):
+    calibration_offset: float | None = None
+    calibration_scale: float | None = Field(default=None, gt=0)
+    custom_min: float | None = None
+    custom_max: float | None = None
+    enabled: bool | None = None
+    notes: str | None = None
+
+
+class DeviceCapabilityResponse(BaseModel):
+    device_id: str
+    capability_id: str
+    capability_name: str
+    category: str
+    data_type: str
+    unit: str | None = None
+    unit_symbol: str | None = None
+    base_min_value: float | None = None
+    base_max_value: float | None = None
+    calibration_offset: float
+    calibration_scale: float
+    custom_min: float | None = None
+    custom_max: float | None = None
+    effective_min: float | None = None
+    effective_max: float | None = None
+    enabled: bool
+    last_calibrated_at: datetime | None = None
+    notes: str | None = None
+    source: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class DeviceCapabilityListResponse(BaseModel):
+    device_id: str
+    sensor_type_id: str | None = None
+    capabilities: list[DeviceCapabilityResponse]
+    total: int
+
+
 class FarmCreate(BaseModel):
     id: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_\-]*$", min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)

@@ -213,6 +213,48 @@ helper = client.set_temperature_limits("sensor-001", min_c=16.0, max_c=31.0)
 print(created.metric, updated.max_value, helper.cooldown_minutes)
 ```
 
+## Device capabilities APIs
+
+Methods:
+
+- `list_device_capabilities(device_id)`
+- `create_device_capability_override(device_id, payload)`
+- `update_device_capability_override(device_id, capability_id, payload)`
+- `delete_device_capability_override(device_id, capability_id)`
+- `upsert_device_capability_override(device_id, capability_id=..., calibration_offset=0.0, calibration_scale=1.0, custom_min=None, custom_max=None, enabled=True, notes=None)`
+- `calibrate_device_capability(device_id, capability_id, offset=0.0, scale=1.0, notes=None)`
+
+Example:
+
+```python
+from vfarm_device_sdk import DeviceCapabilityCreate, DeviceCapabilityUpdate
+
+caps = client.list_device_capabilities("sensor-001")
+target = caps.capabilities[0].capability_id
+
+created = client.create_device_capability_override(
+    "sensor-001",
+    DeviceCapabilityCreate(
+        capability_id=target,
+        calibration_offset=0.2,
+        calibration_scale=1.01,
+        custom_min=-3.0,
+        custom_max=40.0,
+        enabled=True,
+        notes="Install calibration",
+    ),
+)
+
+updated = client.update_device_capability_override(
+    "sensor-001",
+    target,
+    DeviceCapabilityUpdate(calibration_offset=0.05, calibration_scale=1.0),
+)
+
+calibrated = client.calibrate_device_capability("sensor-001", target, offset=0.03, scale=1.0)
+print(created.capability_id, updated.calibration_offset, calibrated.source)
+```
+
 ## Readings and analytics APIs
 
 Methods:
@@ -307,6 +349,7 @@ Commonly used:
 - Device models: `DeviceCreate`, `DeviceUpdate`, `DeviceResponse`, `DeviceLocation`
 - Device event models: `DeviceEventResponse`, `DeviceEventsListResponse`
 - Device threshold models: `DeviceThresholdCreate`, `DeviceThresholdUpdate`, `DeviceThresholdResponse`, `DeviceThresholdListResponse`
+- Device capability models: `DeviceCapabilityCreate`, `DeviceCapabilityUpdate`, `DeviceCapabilityResponse`, `DeviceCapabilityListResponse`
 - Farm models: `FarmCreate`, `FarmUpdate`, `FarmResponse`, `FarmListResponse`
 - Ingestion models: `IngestRequest`, `IngestReading`, `ReadingValue`, `IngestDeviceInfo`
 - Readings models: `LatestReadingResponse`, `ReadingsListResponse`, `ReadingStatsResponse`, `ReadingAnalyticsSnapshot`
@@ -334,6 +377,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `python/vfarm_device_sdk/devices.py`: device API methods
 - `python/vfarm_device_sdk/events.py`: device events API methods
 - `python/vfarm_device_sdk/thresholds.py`: device thresholds API methods
+- `python/vfarm_device_sdk/device_capabilities.py`: device capability override API methods
 - `python/vfarm_device_sdk/farms.py`: farm API methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion API methods
 - `python/vfarm_device_sdk/readings.py`: readings and analytics API methods
