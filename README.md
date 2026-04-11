@@ -117,6 +117,8 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `list_devices(...)`
 - `update_device(device_id, payload)`
 - `delete_device(device_id)`
+- `list_offline_devices(limit=100)`
+- `list_unhealthy_devices(threshold=80, limit=100)`
 - `send_device_heartbeat(device_id)`
 - `register_devices_batch(devices)`
 - `get_device_metadata(device_id)`

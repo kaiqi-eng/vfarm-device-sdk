@@ -224,6 +224,17 @@ def test_sdk_device_batch_registration() -> None:
         assert fetched_b.id == device_b
 
 
+def test_sdk_device_offline_and_unhealthy_views() -> None:
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        offline = client.list_offline_devices(limit=50)
+        assert offline.total >= 0
+        assert all(d.status == "offline" for d in offline.devices)
+
+        unhealthy = client.list_unhealthy_devices(threshold=80, limit=50)
+        assert unhealthy.total >= 0
+        assert all((d.health_score is not None and d.health_score < 80) for d in unhealthy.devices)
+
+
 def test_sdk_low_level_ingest_api() -> None:
     suffix = uuid.uuid4().hex[:8]
     farm_id = f"sdk-full-farm-{suffix}"

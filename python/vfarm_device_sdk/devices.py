@@ -48,6 +48,14 @@ class DeviceApiMixin:
         data = self._request("GET", "/api/v1/devices", params={k: v for k, v in params.items() if v is not None})
         return DeviceListResponse.model_validate(data)
 
+    def list_offline_devices(self, *, limit: int = 100) -> DeviceListResponse:
+        data = self._request("GET", "/api/v1/devices/offline", params={"limit": limit})
+        return DeviceListResponse.model_validate(data)
+
+    def list_unhealthy_devices(self, *, threshold: int = 80, limit: int = 100) -> DeviceListResponse:
+        data = self._request("GET", "/api/v1/devices/unhealthy", params={"threshold": threshold, "limit": limit})
+        return DeviceListResponse.model_validate(data)
+
     def update_device(self, device_id: str, payload: DeviceUpdate) -> DeviceResponse:
         data = self._request(
             "PATCH",
