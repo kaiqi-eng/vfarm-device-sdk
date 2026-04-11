@@ -106,6 +106,36 @@ class EnsureDeviceResult(BaseModel):
     created_response: DeviceCreatedResponse | None = None
 
 
+class DeviceHeartbeatResponse(BaseModel):
+    device_id: str
+    last_seen: datetime
+    status: DeviceStatus | str
+
+
+class DeviceBatchCreateItem(BaseModel):
+    id: str = Field(pattern=r"^[a-zA-Z0-9\-_]+$", min_length=1, max_length=64)
+    farm_id: str = Field(min_length=1, max_length=64)
+    device_type: DeviceType = "sensor"
+    tags: list[str] = Field(default_factory=list)
+
+
+class DeviceBatchRegisterResponse(BaseModel):
+    created: int
+    errors: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class DeviceMetadataResponse(BaseModel):
+    device_id: str
+    config: dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class DeviceMetadataUpdateResponse(BaseModel):
+    device_id: str
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
 class DeviceEventResponse(BaseModel):
     id: int
     device_id: str
@@ -208,6 +238,168 @@ class DeviceCapabilityListResponse(BaseModel):
     device_id: str
     sensor_type_id: str | None = None
     capabilities: list[DeviceCapabilityResponse]
+    total: int
+
+
+SensorTypeCommunication = Literal["i2c", "spi", "uart", "onewire", "analog", "digital", "modbus", "rs485"]
+
+
+class SensorTypeCapabilityCreate(BaseModel):
+    capability_id: str = Field(min_length=1, max_length=32)
+    is_primary: bool = True
+    accuracy: str | None = Field(default=None, max_length=32)
+    resolution: str | None = Field(default=None, max_length=32)
+    sample_rate_hz: float | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
+class SensorTypeCreate(BaseModel):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_]*$", min_length=1, max_length=32)
+    name: str = Field(min_length=1, max_length=64)
+    manufacturer: str | None = Field(default=None, max_length=64)
+    description: str | None = None
+    datasheet_url: str | None = None
+    communication: SensorTypeCommunication | None = None
+    power_voltage: str | None = Field(default=None, max_length=16)
+    capabilities: list[SensorTypeCapabilityCreate] = Field(default_factory=list)
+
+
+class SensorTypeUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    manufacturer: str | None = Field(default=None, max_length=64)
+    description: str | None = None
+    datasheet_url: str | None = None
+    communication: SensorTypeCommunication | None = None
+    power_voltage: str | None = Field(default=None, max_length=16)
+    is_active: bool | None = None
+
+
+class SensorTypeCapabilityResponse(BaseModel):
+    capability_id: str
+    capability_name: str
+    capability_unit: str | None = None
+    capability_unit_symbol: str | None = None
+    is_primary: bool
+    accuracy: str | None = None
+    resolution: str | None = None
+    sample_rate_hz: float | None = None
+    notes: str | None = None
+
+
+class SensorTypeResponse(BaseModel):
+    id: str
+    name: str
+    manufacturer: str | None = None
+    description: str | None = None
+    datasheet_url: str | None = None
+    communication: str | None = None
+    power_voltage: str | None = None
+    capabilities: list[SensorTypeCapabilityResponse] = Field(default_factory=list)
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class SensorTypeListResponse(BaseModel):
+    sensor_types: list[SensorTypeResponse]
+    total: int
+
+
+CapabilityCategory = Literal["environmental", "network", "power", "actuator"]
+CapabilityDataType = Literal["numeric", "boolean", "string"]
+
+
+class CapabilityCreate(BaseModel):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_]*$", min_length=1, max_length=32)
+    name: str = Field(min_length=1, max_length=64)
+    description: str | None = None
+    category: CapabilityCategory
+    data_type: CapabilityDataType
+    unit: str | None = Field(default=None, max_length=16)
+    unit_symbol: str | None = Field(default=None, max_length=8)
+    min_value: float | None = None
+    max_value: float | None = None
+    precision: int = Field(default=2, ge=0, le=6)
+    icon: str | None = Field(default=None, max_length=32)
+
+
+class CapabilityUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    description: str | None = None
+    category: CapabilityCategory | None = None
+    data_type: CapabilityDataType | None = None
+    unit: str | None = Field(default=None, max_length=16)
+    unit_symbol: str | None = Field(default=None, max_length=8)
+    min_value: float | None = None
+    max_value: float | None = None
+    precision: int | None = Field(default=None, ge=0, le=6)
+    icon: str | None = Field(default=None, max_length=32)
+    is_active: bool | None = None
+
+
+class CapabilityResponse(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    category: str
+    data_type: str
+    unit: str | None = None
+    unit_symbol: str | None = None
+    min_value: float | None = None
+    max_value: float | None = None
+    precision: int
+    icon: str | None = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class CapabilityListResponse(BaseModel):
+    capabilities: list[CapabilityResponse]
+    total: int
+
+
+class CapabilityGroupCreate(BaseModel):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_]*$", min_length=1, max_length=32)
+    name: str = Field(min_length=1, max_length=64)
+    description: str | None = None
+    icon: str | None = Field(default=None, max_length=32)
+    display_order: int = Field(default=100, ge=0)
+    capability_ids: list[str] = Field(default_factory=list)
+
+
+class CapabilityGroupUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    description: str | None = None
+    icon: str | None = Field(default=None, max_length=32)
+    display_order: int | None = Field(default=None, ge=0)
+    is_active: bool | None = None
+
+
+class CapabilityGroupMemberResponse(BaseModel):
+    capability_id: str
+    capability_name: str
+    category: str
+    data_type: str
+    unit: str | None = None
+    unit_symbol: str | None = None
+    display_order: int
+
+
+class CapabilityGroupResponse(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    icon: str | None = None
+    display_order: int
+    capabilities: list[CapabilityGroupMemberResponse] = Field(default_factory=list)
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class CapabilityGroupListResponse(BaseModel):
+    groups: list[CapabilityGroupResponse]
     total: int
 
 

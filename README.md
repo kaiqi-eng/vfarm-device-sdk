@@ -11,6 +11,10 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `GET /api/v1/devices`
 - `PATCH /api/v1/devices/{id}`
 - `DELETE /api/v1/devices/{id}`
+- `POST /api/v1/devices/{id}/heartbeat`
+- `POST /api/v1/devices/batch`
+- `GET /api/v1/devices/{id}/metadata`
+- `PATCH /api/v1/devices/{id}/metadata`
 - `GET /api/v1/devices/{id}/events`
 - `GET /api/v1/devices/{id}/thresholds`
 - `GET /api/v1/devices/{id}/thresholds/{metric}`
@@ -21,6 +25,24 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `POST /api/v1/devices/{id}/capabilities`
 - `PATCH /api/v1/devices/{id}/capabilities/{capability_id}`
 - `DELETE /api/v1/devices/{id}/capabilities/{capability_id}`
+- `GET /api/v1/sensor-types`
+- `GET /api/v1/sensor-types/{id}`
+- `POST /api/v1/sensor-types`
+- `PATCH /api/v1/sensor-types/{id}`
+- `DELETE /api/v1/sensor-types/{id}`
+- `DELETE /api/v1/sensor-types/{id}/capabilities/{capability_id}`
+- `GET /api/v1/capabilities`
+- `GET /api/v1/capabilities/{id}`
+- `POST /api/v1/capabilities`
+- `PATCH /api/v1/capabilities/{id}`
+- `DELETE /api/v1/capabilities/{id}`
+- `GET /api/v1/capability-groups`
+- `GET /api/v1/capability-groups/{id}`
+- `POST /api/v1/capability-groups`
+- `PATCH /api/v1/capability-groups/{id}`
+- `DELETE /api/v1/capability-groups/{id}`
+- `POST /api/v1/capability-groups/{id}/capabilities/{capability_id}`
+- `DELETE /api/v1/capability-groups/{id}/capabilities/{capability_id}`
 - `GET /api/v1/farms`
 - `GET /api/v1/farms/{id}`
 - `POST /api/v1/farms`
@@ -44,6 +66,9 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/events.py`: device event history methods and iterator helpers
 - `python/vfarm_device_sdk/thresholds.py`: device threshold CRUD and convenience helpers
 - `python/vfarm_device_sdk/device_capabilities.py`: per-device capability override and calibration helpers
+- `python/vfarm_device_sdk/sensor_types.py`: sensor type CRUD and capability unlink methods
+- `python/vfarm_device_sdk/capabilities.py`: capability catalog CRUD and iteration helpers
+- `python/vfarm_device_sdk/capability_groups.py`: capability group CRUD and membership helpers
 - `python/vfarm_device_sdk/farms.py`: farm CRUD and helper methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion methods and helper wrapper
 - `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
@@ -92,6 +117,10 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `list_devices(...)`
 - `update_device(device_id, payload)`
 - `delete_device(device_id)`
+- `send_device_heartbeat(device_id)`
+- `register_devices_batch(devices)`
+- `get_device_metadata(device_id)`
+- `update_device_metadata(device_id, metadata)`
 - `ensure_device(payload)`
 - `get_device_events(device_id, event_type=None, severity=None, limit=100, offset=0)`
 - `iter_device_events(device_id, event_type=None, severity=None, page_size=100)`
@@ -109,6 +138,29 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `delete_device_capability_override(device_id, capability_id)`
 - `upsert_device_capability_override(device_id, capability_id, ...)`
 - `calibrate_device_capability(device_id, capability_id, offset=..., scale=...)`
+- `list_sensor_types(...)`
+- `get_sensor_type(sensor_type_id)`
+- `create_sensor_type(payload)`
+- `update_sensor_type(sensor_type_id, payload)`
+- `delete_sensor_type(sensor_type_id)`
+- `remove_sensor_type_capability(sensor_type_id, capability_id)`
+- `ensure_sensor_type(payload)`
+- `list_capabilities(...)`
+- `get_capability(capability_id)`
+- `create_capability(payload)`
+- `update_capability(capability_id, payload)`
+- `delete_capability(capability_id)`
+- `ensure_capability(payload)`
+- `iter_capabilities(...)`
+- `list_capability_groups(include_inactive=False)`
+- `get_capability_group(group_id)`
+- `create_capability_group(payload)`
+- `update_capability_group(group_id, payload)`
+- `delete_capability_group(group_id)`
+- `add_capability_to_group(group_id, capability_id, display_order=100)`
+- `remove_capability_from_group(group_id, capability_id)`
+- `ensure_capability_group(payload)`
+- `iter_capability_groups(include_inactive=False)`
 - `list_farms(...)`
 - `get_farm(farm_id)`
 - `create_farm(farm_id, name, description=None, address=None)`
@@ -169,9 +221,9 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - Command layer APIs (poll, create, update, cancel)
 - Docker-backed E2E coverage for current feature set
 
-### Phase 2 (next)
+### Phase 2 (complete)
 
-- Sensor type and capability catalog APIs (`/api/v1/sensor-types`, `/api/v1/capabilities`, `/api/v1/capability-groups`)
+- Capability catalog + group APIs (`/api/v1/capabilities`, `/api/v1/capability-groups`)
 
 ### Phase 3 (automation + operations)
 

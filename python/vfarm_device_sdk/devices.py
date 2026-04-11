@@ -4,9 +4,14 @@ from urllib.parse import quote
 
 from .exceptions import ConflictError
 from .models import (
+    DeviceBatchCreateItem,
+    DeviceBatchRegisterResponse,
     DeviceCreate,
     DeviceCreatedResponse,
+    DeviceHeartbeatResponse,
     DeviceListResponse,
+    DeviceMetadataResponse,
+    DeviceMetadataUpdateResponse,
     DeviceResponse,
     DeviceUpdate,
     EnsureDeviceResult,
@@ -53,6 +58,23 @@ class DeviceApiMixin:
 
     def delete_device(self, device_id: str) -> None:
         self._request("DELETE", f"/api/v1/devices/{quote(device_id, safe='')}")
+
+    def send_device_heartbeat(self, device_id: str) -> DeviceHeartbeatResponse:
+        data = self._request("POST", f"/api/v1/devices/{quote(device_id, safe='')}/heartbeat")
+        return DeviceHeartbeatResponse.model_validate(data)
+
+    def register_devices_batch(self, devices: list[DeviceBatchCreateItem]) -> DeviceBatchRegisterResponse:
+        payload = {"devices": [d.model_dump(mode="json", exclude_none=True) for d in devices]}
+        data = self._request("POST", "/api/v1/devices/batch", json=payload)
+        return DeviceBatchRegisterResponse.model_validate(data)
+
+    def get_device_metadata(self, device_id: str) -> DeviceMetadataResponse:
+        data = self._request("GET", f"/api/v1/devices/{quote(device_id, safe='')}/metadata")
+        return DeviceMetadataResponse.model_validate(data)
+
+    def update_device_metadata(self, device_id: str, metadata: dict[str, object]) -> DeviceMetadataUpdateResponse:
+        data = self._request("PATCH", f"/api/v1/devices/{quote(device_id, safe='')}/metadata", json=metadata)
+        return DeviceMetadataUpdateResponse.model_validate(data)
 
     def ensure_device(self, payload: DeviceCreate) -> EnsureDeviceResult:
         try:

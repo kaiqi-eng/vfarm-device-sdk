@@ -8,8 +8,13 @@ from itertools import islice
 import pytest
 
 from vfarm_device_sdk import (
+    CapabilityCreate,
+    CapabilityGroupCreate,
+    CapabilityGroupUpdate,
+    CapabilityUpdate,
     CommandAcknowledge,
     CommandCreate,
+    DeviceBatchCreateItem,
     DeviceCreate,
     DeviceCapabilityCreate,
     DeviceCapabilityUpdate,
@@ -22,6 +27,9 @@ from vfarm_device_sdk import (
     IngestRequest,
     NotFoundError,
     ReadingValue,
+    SensorTypeCapabilityCreate,
+    SensorTypeCreate,
+    SensorTypeUpdate,
     VFarmClient,
 )
 
@@ -58,6 +66,27 @@ def _sensor_type_for_ingest(client: VFarmClient) -> str:
             return sensor_type["id"]
 
     raise RuntimeError("No sensor type with both temperature and humidity capabilities was found for E2E tests")
+
+
+def _capability_id_for_sensor_type_tests(client: VFarmClient) -> str:
+    preferred = _sensor_type()
+    try:
+        sensor_type = client._request("GET", f"/api/v1/sensor-types/{preferred}", timeout=60.0)
+        capabilities = sensor_type.get("capabilities", [])
+        if capabilities:
+            preferred_ids = {"temperature", "humidity"}
+            for cap in capabilities:
+                if cap["capability_id"] in preferred_ids:
+                    return cap["capability_id"]
+            return capabilities[0]["capability_id"]
+    except Exception:
+        pass
+
+    listing = client._request("GET", "/api/v1/capabilities", params={"limit": 200, "offset": 0}, timeout=60.0)
+    capability_rows = listing.get("capabilities", [])
+    if not capability_rows:
+        raise RuntimeError("No capabilities found for sensor-type E2E tests")
+    return capability_rows[0]["id"]
 
 
 def _ensure_farm(client: VFarmClient, farm_id: str) -> None:
@@ -154,9 +183,45 @@ def test_sdk_health_and_device_crud() -> None:
         listed = client.list_devices(farm_id=farm_id, limit=20)
         assert any(d.id == device_id for d in listed.devices)
 
+        heartbeat = client.send_device_heartbeat(device_id)
+        assert heartbeat.device_id == device_id
+        assert heartbeat.status == "online"
+
+        metadata = client.get_device_metadata(device_id)
+        assert metadata.device_id == device_id
+        updated_metadata = client.update_device_metadata(
+            device_id,
+            {"sdk_label": "device-crud-e2e", "sample_interval_s": 30},
+        )
+        assert updated_metadata.device_id == device_id
+        assert updated_metadata.config["sdk_label"] == "device-crud-e2e"
+
         client.delete_device(device_id)
         with pytest.raises(NotFoundError):
             client.get_device(device_id)
+
+
+def test_sdk_device_batch_registration() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    farm_id = f"sdk-full-farm-{suffix}"
+    device_a = f"sdk-batch-a-{suffix}"
+    device_b = f"sdk-batch-b-{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        _ensure_farm(client, farm_id)
+
+        result = client.register_devices_batch(
+            [
+                DeviceBatchCreateItem(id=device_a, farm_id=farm_id, device_type="sensor", tags=["batch", "a"]),
+                DeviceBatchCreateItem(id=device_b, farm_id=farm_id, device_type="sensor", tags=["batch", "b"]),
+            ]
+        )
+
+        assert result.created >= 1
+        fetched_a = client.get_device(device_a)
+        fetched_b = client.get_device(device_b)
+        assert fetched_a.id == device_a
+        assert fetched_b.id == device_b
 
 
 def test_sdk_low_level_ingest_api() -> None:
@@ -504,3 +569,193 @@ def test_sdk_device_capabilities_api() -> None:
         listed_final = client.list_device_capabilities(device_id)
         target_final = [c for c in listed_final.capabilities if c.capability_id == target_capability]
         assert len(target_final) >= 1
+
+
+def test_sdk_sensor_types_api() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    sensor_type_id = f"sdk_type_{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        capability_id = _capability_id_for_sensor_type_tests(client)
+
+        created = client.create_sensor_type(
+            SensorTypeCreate(
+                id=sensor_type_id,
+                name="SDK Sensor Type",
+                manufacturer="SDK Labs",
+                description="Created by sensor type E2E",
+                communication="digital",
+                power_voltage="3.3V",
+                capabilities=[
+                    SensorTypeCapabilityCreate(
+                        capability_id=capability_id,
+                        is_primary=True,
+                        notes="primary capability",
+                    )
+                ],
+            )
+        )
+        assert created.id == sensor_type_id
+        assert any(c.capability_id == capability_id for c in created.capabilities)
+
+        listed = client.list_sensor_types(manufacturer="SDK Labs", limit=50)
+        assert any(st.id == sensor_type_id for st in listed.sensor_types)
+
+        fetched = client.get_sensor_type(sensor_type_id)
+        assert fetched.id == sensor_type_id
+        assert fetched.manufacturer == "SDK Labs"
+
+        updated = client.update_sensor_type(
+            sensor_type_id,
+            SensorTypeUpdate(
+                name="SDK Sensor Type Updated",
+                description="Updated by sensor type E2E",
+            ),
+        )
+        assert updated.name == "SDK Sensor Type Updated"
+        assert updated.description == "Updated by sensor type E2E"
+
+        client.remove_sensor_type_capability(sensor_type_id, capability_id)
+        after_remove = client.get_sensor_type(sensor_type_id)
+        assert all(c.capability_id != capability_id for c in after_remove.capabilities)
+
+        client.delete_sensor_type(sensor_type_id)
+        soft_deleted = client.get_sensor_type(sensor_type_id)
+        assert soft_deleted.is_active is False
+
+
+def test_sdk_capabilities_api() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    capability_id = f"sdk_cap_{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        created = client.create_capability(
+            CapabilityCreate(
+                id=capability_id,
+                name="SDK Capability",
+                description="Created by capabilities E2E",
+                category="environmental",
+                data_type="numeric",
+                unit="celsius",
+                unit_symbol="C",
+                min_value=-40,
+                max_value=125,
+                precision=2,
+                icon="thermometer",
+            )
+        )
+        assert created.id == capability_id
+        assert created.category == "environmental"
+
+        listed = client.list_capabilities(category="environmental", limit=200)
+        assert any(c.id == capability_id for c in listed.capabilities)
+
+        fetched = client.get_capability(capability_id)
+        assert fetched.id == capability_id
+        assert fetched.name == "SDK Capability"
+
+        updated = client.update_capability(
+            capability_id,
+            CapabilityUpdate(
+                name="SDK Capability Updated",
+                description="Updated by capabilities E2E",
+                min_value=-20,
+                max_value=110,
+            ),
+        )
+        assert updated.name == "SDK Capability Updated"
+        assert updated.min_value == -20
+        assert updated.max_value == 110
+
+        iterated = list(client.iter_capabilities(category="environmental", page_size=50))
+        assert any(c.id == capability_id for c in iterated)
+
+        client.delete_capability(capability_id)
+        with pytest.raises(NotFoundError):
+            client.get_capability(capability_id)
+
+
+def test_sdk_capability_groups_api() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    cap_primary_id = f"sdk_grp_cap_a_{suffix}"
+    cap_secondary_id = f"sdk_grp_cap_b_{suffix}"
+    group_id = f"sdk_group_{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        client.create_capability(
+            CapabilityCreate(
+                id=cap_primary_id,
+                name="SDK Group Cap A",
+                description="Primary capability for group E2E",
+                category="environmental",
+                data_type="numeric",
+                unit="celsius",
+                unit_symbol="C",
+                min_value=-10,
+                max_value=80,
+                precision=1,
+            )
+        )
+        client.create_capability(
+            CapabilityCreate(
+                id=cap_secondary_id,
+                name="SDK Group Cap B",
+                description="Secondary capability for group E2E",
+                category="environmental",
+                data_type="numeric",
+                unit="percent_rh",
+                unit_symbol="%",
+                min_value=0,
+                max_value=100,
+                precision=1,
+            )
+        )
+
+        created = client.create_capability_group(
+            CapabilityGroupCreate(
+                id=group_id,
+                name="SDK Capability Group",
+                description="Created by capability group E2E",
+                icon="gauge",
+                display_order=25,
+                capability_ids=[cap_primary_id],
+            )
+        )
+        assert created.id == group_id
+        assert any(c.capability_id == cap_primary_id for c in created.capabilities)
+
+        listed = client.list_capability_groups()
+        assert any(g.id == group_id for g in listed.groups)
+
+        fetched = client.get_capability_group(group_id)
+        assert fetched.id == group_id
+        assert fetched.name == "SDK Capability Group"
+
+        updated = client.update_capability_group(
+            group_id,
+            CapabilityGroupUpdate(
+                name="SDK Capability Group Updated",
+                description="Updated by capability group E2E",
+                display_order=30,
+            ),
+        )
+        assert updated.name == "SDK Capability Group Updated"
+        assert updated.display_order == 30
+
+        client.add_capability_to_group(group_id, cap_secondary_id, display_order=2)
+        fetched_after_add = client.get_capability_group(group_id)
+        assert any(c.capability_id == cap_secondary_id for c in fetched_after_add.capabilities)
+
+        client.remove_capability_from_group(group_id, cap_secondary_id)
+        fetched_after_remove = client.get_capability_group(group_id)
+        assert all(c.capability_id != cap_secondary_id for c in fetched_after_remove.capabilities)
+
+        iterated = list(client.iter_capability_groups())
+        assert any(g.id == group_id for g in iterated)
+
+        client.delete_capability_group(group_id)
+        deleted = client.get_capability_group(group_id)
+        assert deleted.is_active is False
+
+        client.delete_capability(cap_primary_id)
+        client.delete_capability(cap_secondary_id)
