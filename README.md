@@ -112,6 +112,10 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 pip install -e .
 ```
 
+## Publishing
+
+Trusted publishing workflows are included for TestPyPI and PyPI. See `docs/PUBLISHING.md` for one-time setup and release steps.
+
 ## Basic usage
 
 ```python
