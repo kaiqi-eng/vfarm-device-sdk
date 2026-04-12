@@ -240,6 +240,9 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `cancel_command(device_id, command_id)`
 - `enqueue_config_update(device_id, changes=...)`
 - `enqueue_restart_service(device_id, ...)`
+- `enqueue_set_state(device_id, target=..., state=..., ..., payload_extra=None)`
+- `enqueue_set_value(device_id, target=..., value=..., ..., payload_extra=None)`
+- `enqueue_custom(device_id, action=..., params=..., ..., payload_extra=None)`
 - `health()`
 
 ## End-to-end tests

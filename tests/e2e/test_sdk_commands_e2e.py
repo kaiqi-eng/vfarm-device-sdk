@@ -90,7 +90,50 @@ def test_sdk_command_layer_flow() -> None:
         )
         assert pending_restart.status == "pending"
 
+        pending_set_state = client.enqueue_set_state(
+            device_id,
+            target="relay-1",
+            state="on",
+            reason="sdk helper test",
+            payload_extra={"source": "e2e"},
+        )
+        assert pending_set_state.status == "pending"
+        assert pending_set_state.command_type == "set_state"
+        assert pending_set_state.payload.get("target") == "relay-1"
+        assert pending_set_state.payload.get("state") == "on"
+        assert pending_set_state.payload.get("source") == "e2e"
+
+        pending_set_value = client.enqueue_set_value(
+            device_id,
+            target="fan-speed",
+            value=42.0,
+            unit="percent",
+            reason="sdk helper test",
+            payload_extra={"policy": "balanced"},
+        )
+        assert pending_set_value.status == "pending"
+        assert pending_set_value.command_type == "set_value"
+        assert pending_set_value.payload.get("target") == "fan-speed"
+        assert float(pending_set_value.payload.get("value")) == 42.0
+        assert pending_set_value.payload.get("policy") == "balanced"
+
+        pending_custom = client.enqueue_custom(
+            device_id,
+            action="sync_profile",
+            params={"profile": "eco"},
+            reason="sdk helper test",
+            payload_extra={"dry_run": True},
+        )
+        assert pending_custom.status == "pending"
+        assert pending_custom.command_type == "custom"
+        assert pending_custom.payload.get("action") == "sync_profile"
+        assert pending_custom.payload.get("params") == {"profile": "eco"}
+        assert pending_custom.payload.get("dry_run") is True
+
         client.cancel_command(device_id, pending_restart.id)
         history = client.list_device_commands(device_id, limit=20)
         by_id = {c.id: c for c in history.commands}
         assert by_id[pending_restart.id].status == "cancelled"
+        assert by_id[pending_set_state.id].command_type == "set_state"
+        assert by_id[pending_set_value.id].command_type == "set_value"
+        assert by_id[pending_custom.id].command_type == "custom"

@@ -289,6 +289,11 @@ Convenience command helpers:
 
 - `enqueue_config_update(device_id, changes=..., merge_strategy="patch", priority=100, ttl_minutes=60, notes=None)`
 - `enqueue_restart_service(device_id, reason=None, delay_seconds=5, graceful=True, priority=100, ttl_minutes=60, notes=None)`
+- `enqueue_set_state(device_id, target=..., state="on"|"off", reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None)`
+- `enqueue_set_value(device_id, target=..., value=..., unit=None, reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None)`
+- `enqueue_custom(device_id, action=..., params=None, reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None)`
+
+`payload_extra` is merged after typed payload fields and can override keys with the same name.
 
 Example:
 
@@ -313,6 +318,27 @@ client.update_command_status(
     "sensor-001",
     target.id,
     CommandAcknowledge(status="completed", result={"applied": {"poll_interval_s": 45}}),
+)
+
+set_state = client.enqueue_set_state(
+    "sensor-001",
+    target="relay-1",
+    state="on",
+    payload_extra={"source": "policy-engine"},
+)
+
+set_value = client.enqueue_set_value(
+    "sensor-001",
+    target="fan-speed",
+    value=42.0,
+    unit="percent",
+)
+
+custom = client.enqueue_custom(
+    "sensor-001",
+    action="sync_profile",
+    params={"profile": "eco"},
+    payload_extra={"dry_run": True},
 )
 ```
 

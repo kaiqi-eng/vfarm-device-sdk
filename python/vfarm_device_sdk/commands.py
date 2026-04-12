@@ -1,15 +1,31 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from .models import (
     CommandAcknowledge,
     CommandCreate,
     CommandListResponse,
     CommandResponse,
+    CustomPayload,
     PendingCommandsResponse,
+    SetStatePayload,
+    SetValuePayload,
 )
 
 
 class CommandApiMixin:
+    @staticmethod
+    def _merge_payload_extra(
+        payload: dict[str, object],
+        payload_extra: dict[str, object] | None,
+    ) -> dict[str, object]:
+        merged = dict(payload)
+        if payload_extra:
+            # Intentionally allow extra keys to override typed payload keys.
+            merged.update(payload_extra)
+        return merged
+
     def fetch_pending_commands(self, device_id: str, *, limit: int = 10) -> PendingCommandsResponse:
         data = self._request(
             "GET",
@@ -103,6 +119,95 @@ class CommandApiMixin:
                     "delay_seconds": delay_seconds,
                     "graceful": graceful,
                 },
+                priority=priority,
+                ttl_minutes=ttl_minutes,
+                notes=notes,
+            ),
+        )
+
+    def enqueue_set_state(
+        self,
+        device_id: str,
+        *,
+        target: str,
+        state: Literal["on", "off"],
+        reason: str | None = None,
+        priority: int = 100,
+        ttl_minutes: int = 60,
+        notes: str | None = None,
+        payload_extra: dict[str, object] | None = None,
+    ) -> CommandResponse:
+        typed_payload = SetStatePayload(
+            target=target,
+            state=state,
+            reason=reason,
+        ).model_dump(mode="json", exclude_none=True)
+        payload = self._merge_payload_extra(typed_payload, payload_extra)
+        return self.create_command(
+            device_id,
+            CommandCreate(
+                command_type="set_state",
+                payload=payload,
+                priority=priority,
+                ttl_minutes=ttl_minutes,
+                notes=notes,
+            ),
+        )
+
+    def enqueue_set_value(
+        self,
+        device_id: str,
+        *,
+        target: str,
+        value: float,
+        unit: str | None = None,
+        reason: str | None = None,
+        priority: int = 100,
+        ttl_minutes: int = 60,
+        notes: str | None = None,
+        payload_extra: dict[str, object] | None = None,
+    ) -> CommandResponse:
+        typed_payload = SetValuePayload(
+            target=target,
+            value=value,
+            unit=unit,
+            reason=reason,
+        ).model_dump(mode="json", exclude_none=True)
+        payload = self._merge_payload_extra(typed_payload, payload_extra)
+        return self.create_command(
+            device_id,
+            CommandCreate(
+                command_type="set_value",
+                payload=payload,
+                priority=priority,
+                ttl_minutes=ttl_minutes,
+                notes=notes,
+            ),
+        )
+
+    def enqueue_custom(
+        self,
+        device_id: str,
+        *,
+        action: str,
+        params: dict[str, object] | None = None,
+        reason: str | None = None,
+        priority: int = 100,
+        ttl_minutes: int = 60,
+        notes: str | None = None,
+        payload_extra: dict[str, object] | None = None,
+    ) -> CommandResponse:
+        typed_payload = CustomPayload(
+            action=action,
+            params=params or {},
+            reason=reason,
+        ).model_dump(mode="json", exclude_none=True)
+        payload = self._merge_payload_extra(typed_payload, payload_extra)
+        return self.create_command(
+            device_id,
+            CommandCreate(
+                command_type="custom",
+                payload=payload,
                 priority=priority,
                 ttl_minutes=ttl_minutes,
                 notes=notes,
