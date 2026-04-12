@@ -8,6 +8,14 @@ from itertools import islice
 import pytest
 
 from vfarm_device_sdk import (
+    AlertChannelCreate,
+    AlertChannelUpdate,
+    AlertRuleCreate,
+    AlertRuleUpdate,
+    AutomationCommandSpec,
+    AutomationRuleCreate,
+    AutomationRuleUpdate,
+    ConditionSimple,
     CapabilityCreate,
     CapabilityGroupCreate,
     CapabilityGroupUpdate,
@@ -770,3 +778,175 @@ def test_sdk_capability_groups_api() -> None:
 
         client.delete_capability(cap_primary_id)
         client.delete_capability(cap_secondary_id)
+
+
+def test_sdk_automation_api() -> None:
+    suffix = uuid.uuid4().hex[:8]
+    farm_id = f"sdk-full-farm-{suffix}"
+    source_device_id = f"sdk-auto-src-{suffix}"
+    target_device_id = f"sdk-auto-tgt-{suffix}"
+
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        _ensure_farm(client, farm_id)
+        client.ensure_device(
+            DeviceCreate(
+                id=source_device_id,
+                farm_id=farm_id,
+                device_type="sensor",
+                sensor_type_id=_sensor_type(),
+                device_model="DHT22",
+                location=DeviceLocation(rack_id="rack-auto", node_id="node-src", position="p-src"),
+                firmware_version="1.0.0",
+            )
+        )
+        client.ensure_device(
+            DeviceCreate(
+                id=target_device_id,
+                farm_id=farm_id,
+                device_type="actuator",
+                device_model="RelayBoard",
+                location=DeviceLocation(rack_id="rack-auto", node_id="node-tgt", position="p-tgt"),
+                firmware_version="1.0.0",
+            )
+        )
+
+        created = client.create_automation_rule(
+            AutomationRuleCreate(
+                name=f"SDK Automation {suffix}",
+                description="Created by automation E2E",
+                source_device_ids=[source_device_id],
+                source_farm_ids=[farm_id],
+                trigger_on="reading",
+                conditions=ConditionSimple(metric="temperature", operator=">", value=20.0),
+                target_device_ids=[target_device_id],
+                commands=[AutomationCommandSpec(command_type="restart_service", payload={"reason": "automation-e2e"})],
+                cooldown_seconds=30,
+                cooldown_scope="rule",
+                enabled=True,
+                priority=100,
+            )
+        )
+        assert created.id
+        rule_id = created.id
+
+        listed = client.list_automation_rules(limit=200)
+        assert any(r.id == rule_id for r in listed.rules)
+
+        fetched = client.get_automation_rule(rule_id)
+        assert fetched.id == rule_id
+        assert fetched.trigger_on == "reading"
+
+        disabled = client.disable_automation_rule(rule_id)
+        assert disabled.enabled is False
+        enabled = client.enable_automation_rule(rule_id)
+        assert enabled.enabled is True
+
+        updated = client.update_automation_rule(
+            rule_id,
+            AutomationRuleUpdate(
+                description="Updated by automation E2E",
+                priority=90,
+            ),
+        )
+        assert updated.description == "Updated by automation E2E"
+        assert updated.priority == 90
+
+        stats = client.get_automation_stats()
+        assert stats.total_rules >= 1
+
+        history = client.list_automation_history(rule_id=rule_id, limit=20)
+        assert history.total >= 0
+
+        iterated_rules = list(client.iter_automation_rules(page_size=50))
+        assert any(r.id == rule_id for r in iterated_rules)
+
+        client.delete_automation_rule(rule_id)
+        with pytest.raises(NotFoundError):
+            client.get_automation_rule(rule_id)
+
+
+def test_sdk_alerts_api() -> None:
+    with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+        channel = client.create_alert_channel(
+            AlertChannelCreate(
+                name=f"SDK Alert Channel {uuid.uuid4().hex[:6]}",
+                endpoint_url=f"{_base_url()}/api/v1/devices/batch",
+                http_method="POST",
+                headers={"X-SDK-Test": "alerts"},
+                timeout_ms=3000,
+                enabled=True,
+            )
+        )
+        assert channel.id
+
+        listed_channels = client.list_alert_channels(limit=50)
+        assert any(c.id == channel.id for c in listed_channels.channels)
+
+        fetched_channel = client.get_alert_channel(channel.id)
+        assert fetched_channel.id == channel.id
+
+        updated_channel = client.update_alert_channel(
+            channel.id,
+            AlertChannelUpdate(
+                name=f"{fetched_channel.name} Updated",
+                enabled=False,
+            ),
+        )
+        assert updated_channel.enabled is False
+
+        reenabled_channel = client.enable_alert_channel(channel.id)
+        assert reenabled_channel.enabled is True
+
+        test_result = client.test_alert_channel(channel.id)
+        assert isinstance(test_result.success, bool)
+
+        rule = client.create_alert_rule(
+            AlertRuleCreate(
+                name=f"SDK Alert Rule {uuid.uuid4().hex[:6]}",
+                description="Created by SDK alerts E2E",
+                event_types=["threshold_exceeded"],
+                severities=["warning", "error"],
+                event_category="threshold",
+                cooldown_minutes=5,
+                cooldown_scope="device_event_type",
+                channel_ids=[channel.id],
+                enabled=True,
+                priority=100,
+            )
+        )
+        assert rule.id
+
+        listed_rules = client.list_alert_rules(limit=50)
+        assert any(r.id == rule.id for r in listed_rules.rules)
+
+        fetched_rule = client.get_alert_rule(rule.id)
+        assert fetched_rule.id == rule.id
+
+        updated_rule = client.update_alert_rule(
+            rule.id,
+            AlertRuleUpdate(
+                description="Updated by SDK alerts E2E",
+                enabled=False,
+            ),
+        )
+        assert updated_rule.enabled is False
+
+        reenabled_rule = client.enable_alert_rule(rule.id)
+        assert reenabled_rule.enabled is True
+
+        history = client.list_alert_history(limit=20)
+        assert history.total >= 0
+
+        iter_channels = list(client.iter_alert_channels(page_size=25))
+        assert any(c.id == channel.id for c in iter_channels)
+        iter_rules = list(client.iter_alert_rules(page_size=25))
+        assert any(r.id == rule.id for r in iter_rules)
+        _ = list(client.iter_alert_history(page_size=25))
+
+        client.delete_alert_rule(rule.id)
+        with pytest.raises(NotFoundError):
+            client.get_alert_rule(rule.id)
+
+        client.delete_alert_channel(channel.id)
+        with pytest.raises(NotFoundError):
+            client.get_alert_channel(channel.id)

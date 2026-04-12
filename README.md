@@ -43,6 +43,25 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `DELETE /api/v1/capability-groups/{id}`
 - `POST /api/v1/capability-groups/{id}/capabilities/{capability_id}`
 - `DELETE /api/v1/capability-groups/{id}/capabilities/{capability_id}`
+- `GET /api/v1/automation/rules`
+- `GET /api/v1/automation/rules/{id}`
+- `POST /api/v1/automation/rules`
+- `PATCH /api/v1/automation/rules/{id}`
+- `DELETE /api/v1/automation/rules/{id}`
+- `GET /api/v1/automation/stats`
+- `GET /api/v1/automation/history`
+- `GET /api/v1/alerts/channels`
+- `GET /api/v1/alerts/channels/{id}`
+- `POST /api/v1/alerts/channels`
+- `PATCH /api/v1/alerts/channels/{id}`
+- `DELETE /api/v1/alerts/channels/{id}`
+- `POST /api/v1/alerts/channels/{id}/test`
+- `GET /api/v1/alerts/rules`
+- `GET /api/v1/alerts/rules/{id}`
+- `POST /api/v1/alerts/rules`
+- `PATCH /api/v1/alerts/rules/{id}`
+- `DELETE /api/v1/alerts/rules/{id}`
+- `GET /api/v1/alerts/history`
 - `GET /api/v1/farms`
 - `GET /api/v1/farms/{id}`
 - `POST /api/v1/farms`
@@ -69,6 +88,8 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/sensor_types.py`: sensor type CRUD and capability unlink methods
 - `python/vfarm_device_sdk/capabilities.py`: capability catalog CRUD and iteration helpers
 - `python/vfarm_device_sdk/capability_groups.py`: capability group CRUD and membership helpers
+- `python/vfarm_device_sdk/automation.py`: automation rule/history/stats methods
+- `python/vfarm_device_sdk/alerts.py`: alert channel/rule/history methods
 - `python/vfarm_device_sdk/farms.py`: farm CRUD and helper methods
 - `python/vfarm_device_sdk/ingestion.py`: ingestion methods and helper wrapper
 - `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
@@ -163,6 +184,36 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
 - `remove_capability_from_group(group_id, capability_id)`
 - `ensure_capability_group(payload)`
 - `iter_capability_groups(include_inactive=False)`
+- `list_automation_rules(...)`
+- `get_automation_rule(rule_id)`
+- `create_automation_rule(payload)`
+- `update_automation_rule(rule_id, payload)`
+- `delete_automation_rule(rule_id)`
+- `enable_automation_rule(rule_id)`
+- `disable_automation_rule(rule_id)`
+- `get_automation_stats()`
+- `list_automation_history(...)`
+- `iter_automation_rules(...)`
+- `iter_automation_history(...)`
+- `list_alert_channels(...)`
+- `get_alert_channel(channel_id)`
+- `create_alert_channel(payload)`
+- `update_alert_channel(channel_id, payload)`
+- `delete_alert_channel(channel_id)`
+- `test_alert_channel(channel_id)`
+- `enable_alert_channel(channel_id)`
+- `disable_alert_channel(channel_id)`
+- `list_alert_rules(...)`
+- `get_alert_rule(rule_id)`
+- `create_alert_rule(payload)`
+- `update_alert_rule(rule_id, payload)`
+- `delete_alert_rule(rule_id)`
+- `enable_alert_rule(rule_id)`
+- `disable_alert_rule(rule_id)`
+- `list_alert_history(...)`
+- `iter_alert_channels(...)`
+- `iter_alert_rules(...)`
+- `iter_alert_history(...)`
 - `list_farms(...)`
 - `get_farm(farm_id)`
 - `create_farm(farm_id, name, description=None, address=None)`

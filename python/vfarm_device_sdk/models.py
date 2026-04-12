@@ -627,3 +627,235 @@ class PendingCommandsResponse(BaseModel):
     device_id: str
     commands: list[CommandResponse]
     poll_again_seconds: int = 30
+
+
+ConditionOperator = Literal[">", ">=", "<", "<=", "==", "!="]
+TriggerType = Literal["reading", "threshold_exceeded"]
+CooldownScope = Literal["rule", "source_device", "target_device"]
+AutomationHistoryStatus = Literal["evaluated", "triggered", "commands_created", "suppressed", "error"]
+
+
+class ConditionSimple(BaseModel):
+    metric: str = Field(min_length=1, max_length=32)
+    operator: ConditionOperator
+    value: float
+
+
+class ConditionCompound(BaseModel):
+    logic: Literal["AND", "OR"]
+    conditions: list[ConditionSimple | ConditionCompound] = Field(min_length=2)
+
+
+class AutomationCommandSpec(BaseModel):
+    command_type: CommandType
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class AutomationRuleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    description: str | None = None
+    source_device_ids: list[str] = Field(default_factory=list)
+    source_device_tags: list[str] = Field(default_factory=list)
+    source_farm_ids: list[str] = Field(default_factory=list)
+    trigger_on: TriggerType = "reading"
+    conditions: ConditionSimple | ConditionCompound
+    target_device_ids: list[str] = Field(min_length=1)
+    commands: list[AutomationCommandSpec] = Field(min_length=1)
+    cooldown_seconds: int = Field(default=60, ge=0, le=86400)
+    cooldown_scope: CooldownScope = "rule"
+    enabled: bool = True
+    priority: int = Field(default=100, ge=1, le=1000)
+
+
+class AutomationRuleUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    description: str | None = None
+    source_device_ids: list[str] | None = None
+    source_device_tags: list[str] | None = None
+    source_farm_ids: list[str] | None = None
+    trigger_on: TriggerType | None = None
+    conditions: ConditionSimple | ConditionCompound | None = None
+    target_device_ids: list[str] | None = Field(default=None, min_length=1)
+    commands: list[AutomationCommandSpec] | None = Field(default=None, min_length=1)
+    cooldown_seconds: int | None = Field(default=None, ge=0, le=86400)
+    cooldown_scope: CooldownScope | None = None
+    enabled: bool | None = None
+    priority: int | None = Field(default=None, ge=1, le=1000)
+
+
+class AutomationRuleResponse(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    source_device_ids: list[str] = Field(default_factory=list)
+    source_device_tags: list[str] = Field(default_factory=list)
+    source_farm_ids: list[str] = Field(default_factory=list)
+    trigger_on: str
+    conditions: dict[str, Any]
+    target_device_ids: list[str]
+    commands: list[dict[str, Any]]
+    cooldown_seconds: int
+    cooldown_scope: str
+    enabled: bool
+    priority: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class AutomationRuleListResponse(BaseModel):
+    rules: list[AutomationRuleResponse]
+    total: int
+    enabled_count: int
+    disabled_count: int
+
+
+class AutomationHistoryResponse(BaseModel):
+    id: int
+    rule_id: str | None = None
+    rule_name: str
+    source_device_id: str
+    reading_values: dict[str, Any] | None = None
+    conditions_evaluated: list[dict[str, Any]] | None = None
+    conditions_met: bool
+    status: str
+    suppression_reason: str | None = None
+    command_ids: list[str] = Field(default_factory=list)
+    commands_created: int
+    triggered_at: datetime
+
+
+class AutomationHistoryListResponse(BaseModel):
+    history: list[AutomationHistoryResponse]
+    total: int
+
+
+class AutomationStatsResponse(BaseModel):
+    total_rules: int
+    enabled_rules: int
+    disabled_rules: int
+    evaluations_24h: int
+    triggers_24h: int
+    commands_created_24h: int
+    suppressions_24h: int
+
+
+AlertAuthType = Literal["none", "api_key", "hmac"]
+AlertHttpMethod = Literal["POST", "PUT"]
+AlertCooldownScope = Literal["event_type", "device_event_type"]
+
+
+class AlertChannelCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    endpoint_url: str = Field(pattern=r"^https?://")
+    http_method: AlertHttpMethod = "POST"
+    headers: dict[str, Any] = Field(default_factory=dict)
+    timeout_ms: int = Field(default=5000, ge=1000, le=30000)
+    auth_type: AlertAuthType = "none"
+    auth_secret: str | None = None
+    enabled: bool = True
+
+
+class AlertChannelUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    endpoint_url: str | None = Field(default=None, pattern=r"^https?://")
+    http_method: AlertHttpMethod | None = None
+    headers: dict[str, Any] | None = None
+    timeout_ms: int | None = Field(default=None, ge=1000, le=30000)
+    auth_type: AlertAuthType | None = None
+    auth_secret: str | None = None
+    enabled: bool | None = None
+
+
+class AlertChannelResponse(BaseModel):
+    id: str
+    name: str
+    channel_type: str
+    endpoint_url: str
+    http_method: str
+    headers: dict[str, Any] = Field(default_factory=dict)
+    timeout_ms: int
+    auth_type: str | None = None
+    enabled: bool
+    last_success_at: datetime | None = None
+    last_failure_at: datetime | None = None
+    failure_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
+class AlertChannelListResponse(BaseModel):
+    channels: list[AlertChannelResponse]
+    total: int
+
+
+class AlertRuleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    description: str | None = None
+    event_types: list[str] = Field(min_length=1)
+    severities: list[str] = Field(min_length=1)
+    event_category: str | None = None
+    cooldown_minutes: int = Field(default=15, ge=1, le=1440)
+    cooldown_scope: AlertCooldownScope = "device_event_type"
+    channel_ids: list[str] = Field(default_factory=list)
+    enabled: bool = True
+    priority: int = Field(default=100, ge=1, le=1000)
+
+
+class AlertRuleUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    description: str | None = None
+    event_types: list[str] | None = None
+    severities: list[str] | None = None
+    event_category: str | None = None
+    cooldown_minutes: int | None = Field(default=None, ge=1, le=1440)
+    cooldown_scope: AlertCooldownScope | None = None
+    channel_ids: list[str] | None = None
+    enabled: bool | None = None
+    priority: int | None = Field(default=None, ge=1, le=1000)
+
+
+class AlertRuleResponse(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    event_types: list[str]
+    severities: list[str]
+    event_category: str | None = None
+    cooldown_minutes: int
+    cooldown_scope: str
+    channel_ids: list[str] = Field(default_factory=list)
+    enabled: bool
+    priority: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class AlertRuleListResponse(BaseModel):
+    rules: list[AlertRuleResponse]
+    total: int
+
+
+class AlertHistoryResponse(BaseModel):
+    id: int
+    event_id: int | None = None
+    device_id: str
+    event_type: str
+    rule_id: str | None = None
+    channel_id: str | None = None
+    status: str
+    suppression_reason: str | None = None
+    response_code: int | None = None
+    latency_ms: int | None = None
+    alerted_at: datetime
+
+
+class AlertHistoryListResponse(BaseModel):
+    alerts: list[AlertHistoryResponse]
+    total: int
+
+
+class AlertTestResponse(BaseModel):
+    success: bool
+    response_code: int | None = None
+    latency_ms: int | None = None
+    error: str | None = None
