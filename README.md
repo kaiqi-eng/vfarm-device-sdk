@@ -81,6 +81,7 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 ## Package layout
 
 - `python/vfarm_device_sdk/core.py`: shared HTTP transport and error mapping
+- `python/vfarm_device_sdk/async_devices.py`: async device registration and device management methods
 - `python/vfarm_device_sdk/devices.py`: device registration and device management methods
 - `python/vfarm_device_sdk/events.py`: device event history methods and iterator helpers
 - `python/vfarm_device_sdk/thresholds.py`: device threshold CRUD and convenience helpers
@@ -95,6 +96,7 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
 - `python/vfarm_device_sdk/commands.py`: command-layer methods for polling, create/update, and cancel
 - `python/vfarm_device_sdk/client.py`: facade `VFarmClient` that composes all API mixins
+- `python/vfarm_device_sdk/async_client.py`: facade `AsyncVFarmClient` (currently device + command APIs)
 - `python/vfarm_device_sdk/models.py`: typed Pydantic request/response models
 - `python/vfarm_device_sdk/exceptions.py`: API-specific exceptions
 - `examples/register_device.py`: device registration + ingest + latest reading example
@@ -133,6 +135,30 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
     )
 
     print(result.device.id, result.created)
+```
+
+## Async usage (devices + commands)
+
+```python
+from vfarm_device_sdk import AsyncVFarmClient, DeviceCreate
+
+async with AsyncVFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as client:
+    result = await client.ensure_device(
+        DeviceCreate(
+            id="sensor-async-001",
+            farm_id="farm-alpha",
+            device_type="sensor",
+        )
+    )
+    print(result.device.id, result.created)
+
+    cmd = await client.enqueue_set_state(
+        result.device.id,
+        target="relay-1",
+        state="on",
+        payload_extra={"source": "async-example"},
+    )
+    print(cmd.id, cmd.command_type)
 ```
 
 ## Current client surface
@@ -291,6 +317,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - Alerting and webhook configuration APIs
 - Advanced command helpers (typed payload builders for `set_state`, `set_value`, `custom`)
 - Async client (`httpx.AsyncClient`) for gateways and high-throughput workloads
+  - In progress: `AsyncVFarmClient` currently implements device + command APIs with async transport and lifecycle support
 
 ### Phase 4 (developer experience)
 

@@ -1,4 +1,5 @@
 from .client import VFarmClient
+from .async_client import AsyncVFarmClient
 from .exceptions import (
     AuthenticationError,
     ConflictError,
@@ -197,5 +198,6 @@ __all__ = [
     "SetValuePayload",
     "ValidationError",
     "VFarmApiError",
+    "AsyncVFarmClient",
     "VFarmClient",
 ]

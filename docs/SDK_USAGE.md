@@ -45,6 +45,39 @@ with VFarmClient(
     print(result.created, result.device.id)
 ```
 
+## Async client (devices + commands)
+
+`AsyncVFarmClient` is now available for device and command endpoints with async lifecycle support.
+
+```python
+import asyncio
+from vfarm_device_sdk import AsyncVFarmClient, DeviceCreate
+
+async def main() -> None:
+    async with AsyncVFarmClient(
+        base_url="http://localhost:8003",
+        api_key="your-farm-api-key",
+    ) as client:
+        result = await client.ensure_device(
+            DeviceCreate(
+                id="sensor-async-001",
+                farm_id="farm-alpha",
+                device_type="sensor",
+            )
+        )
+        print(result.device.id, result.created)
+
+        cmd = await client.enqueue_set_value(
+            result.device.id,
+            target="fan-speed",
+            value=35.0,
+            unit="percent",
+        )
+        print(cmd.id, cmd.command_type)
+
+asyncio.run(main())
+```
+
 ## Client lifecycle
 
 - Use `with VFarmClient(...) as client:` for automatic connection cleanup.
@@ -400,6 +433,8 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 ## Project structure
 
 - `python/vfarm_device_sdk/core.py`: shared transport and HTTP error mapping
+- `python/vfarm_device_sdk/async_devices.py`: async device API methods
+- `python/vfarm_device_sdk/async_commands.py`: async command API methods
 - `python/vfarm_device_sdk/devices.py`: device API methods
 - `python/vfarm_device_sdk/events.py`: device events API methods
 - `python/vfarm_device_sdk/thresholds.py`: device thresholds API methods
@@ -409,5 +444,6 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `python/vfarm_device_sdk/readings.py`: readings and analytics API methods
 - `python/vfarm_device_sdk/commands.py`: command API methods
 - `python/vfarm_device_sdk/client.py`: composed `VFarmClient`
+- `python/vfarm_device_sdk/async_client.py`: composed `AsyncVFarmClient` (device + command APIs)
 - `python/vfarm_device_sdk/models.py`: typed request/response models
 - `python/vfarm_device_sdk/exceptions.py`: SDK exception classes
