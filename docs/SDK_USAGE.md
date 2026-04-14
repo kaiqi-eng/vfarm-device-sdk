@@ -45,9 +45,9 @@ with VFarmClient(
     print(result.created, result.device.id)
 ```
 
-## Async client (devices + commands)
+## Async client (devices + commands + events + farms + ingestion + readings)
 
-`AsyncVFarmClient` is now available for device and command endpoints with async lifecycle support.
+`AsyncVFarmClient` is now available for device, command, events, farms, ingestion, and readings endpoints with async lifecycle support.
 
 ```python
 import asyncio
@@ -74,6 +74,18 @@ async def main() -> None:
             unit="percent",
         )
         print(cmd.id, cmd.command_type)
+
+        health = await client.health()
+        print(health["status"])
+
+        latest = await client.get_latest_reading(result.device.id)
+        print(latest.id, latest.sensor_id)
+
+        latest_event = await client.get_latest_device_event(result.device.id)
+        print(latest_event.event_type if latest_event else "no events")
+
+        farms = await client.list_farms(limit=5)
+        print(farms.total)
 
 asyncio.run(main())
 ```
@@ -435,6 +447,10 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `python/vfarm_device_sdk/core.py`: shared transport and HTTP error mapping
 - `python/vfarm_device_sdk/async_devices.py`: async device API methods
 - `python/vfarm_device_sdk/async_commands.py`: async command API methods
+- `python/vfarm_device_sdk/async_events.py`: async events API methods
+- `python/vfarm_device_sdk/async_farms.py`: async farms API methods
+- `python/vfarm_device_sdk/async_ingestion.py`: async ingestion API methods
+- `python/vfarm_device_sdk/async_readings.py`: async readings API methods
 - `python/vfarm_device_sdk/devices.py`: device API methods
 - `python/vfarm_device_sdk/events.py`: device events API methods
 - `python/vfarm_device_sdk/thresholds.py`: device thresholds API methods
@@ -444,6 +460,6 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `python/vfarm_device_sdk/readings.py`: readings and analytics API methods
 - `python/vfarm_device_sdk/commands.py`: command API methods
 - `python/vfarm_device_sdk/client.py`: composed `VFarmClient`
-- `python/vfarm_device_sdk/async_client.py`: composed `AsyncVFarmClient` (device + command APIs)
+- `python/vfarm_device_sdk/async_client.py`: composed `AsyncVFarmClient` (device + command + events + farms + ingestion + readings APIs)
 - `python/vfarm_device_sdk/models.py`: typed request/response models
 - `python/vfarm_device_sdk/exceptions.py`: SDK exception classes

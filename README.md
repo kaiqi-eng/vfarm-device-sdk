@@ -96,7 +96,11 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
 - `python/vfarm_device_sdk/commands.py`: command-layer methods for polling, create/update, and cancel
 - `python/vfarm_device_sdk/client.py`: facade `VFarmClient` that composes all API mixins
-- `python/vfarm_device_sdk/async_client.py`: facade `AsyncVFarmClient` (currently device + command APIs)
+- `python/vfarm_device_sdk/async_client.py`: facade `AsyncVFarmClient` (currently device + command + ingestion + readings APIs)
+- `python/vfarm_device_sdk/async_ingestion.py`: async ingestion and health methods
+- `python/vfarm_device_sdk/async_readings.py`: async readings and analytics methods
+- `python/vfarm_device_sdk/async_events.py`: async device events and async iterator methods
+- `python/vfarm_device_sdk/async_farms.py`: async farm CRUD and async iterator methods
 - `python/vfarm_device_sdk/models.py`: typed Pydantic request/response models
 - `python/vfarm_device_sdk/exceptions.py`: API-specific exceptions
 - `examples/register_device.py`: device registration + ingest + latest reading example
@@ -137,7 +141,7 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
     print(result.device.id, result.created)
 ```
 
-## Async usage (devices + commands)
+## Async usage (devices + commands + events + farms + ingestion + readings)
 
 ```python
 from vfarm_device_sdk import AsyncVFarmClient, DeviceCreate
@@ -159,6 +163,18 @@ async with AsyncVFarmClient(base_url="http://localhost:8000", api_key="your-api-
         payload_extra={"source": "async-example"},
     )
     print(cmd.id, cmd.command_type)
+
+    health = await client.health()
+    print(health["status"])
+
+    latest = await client.get_latest_reading(result.device.id)
+    print(latest.id, latest.sensor_id)
+
+    latest_event = await client.get_latest_device_event(result.device.id)
+    print(latest_event.event_type if latest_event else "no events")
+
+    farms = await client.list_farms(limit=5)
+    print(farms.total)
 ```
 
 ## Current client surface
@@ -317,7 +333,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - Alerting and webhook configuration APIs
 - Advanced command helpers (typed payload builders for `set_state`, `set_value`, `custom`)
 - Async client (`httpx.AsyncClient`) for gateways and high-throughput workloads
-  - In progress: `AsyncVFarmClient` currently implements device + command APIs with async transport and lifecycle support
+  - In progress: `AsyncVFarmClient` currently implements device + command + events + farms + ingestion + readings APIs with async transport and lifecycle support
 
 ### Phase 4 (developer experience)
 
