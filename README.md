@@ -96,11 +96,17 @@ The current package is grounded in the implemented API in the `bhavfarm` reposit
 - `python/vfarm_device_sdk/readings.py`: readings history, latest, stats, and analytics snapshot helpers
 - `python/vfarm_device_sdk/commands.py`: command-layer methods for polling, create/update, and cancel
 - `python/vfarm_device_sdk/client.py`: facade `VFarmClient` that composes all API mixins
-- `python/vfarm_device_sdk/async_client.py`: facade `AsyncVFarmClient` (currently device + command + ingestion + readings APIs)
+- `python/vfarm_device_sdk/async_client.py`: facade `AsyncVFarmClient` (alerts + automation + capability groups + capabilities + device + command + device capabilities + events + farms + ingestion + readings + sensor types + thresholds APIs)
 - `python/vfarm_device_sdk/async_ingestion.py`: async ingestion and health methods
 - `python/vfarm_device_sdk/async_readings.py`: async readings and analytics methods
 - `python/vfarm_device_sdk/async_events.py`: async device events and async iterator methods
 - `python/vfarm_device_sdk/async_farms.py`: async farm CRUD and async iterator methods
+- `python/vfarm_device_sdk/async_alerts.py`: async alerts channel/rule/history methods
+- `python/vfarm_device_sdk/async_automation.py`: async automation rule/history/stats methods
+- `python/vfarm_device_sdk/async_capability_groups.py`: async capability group CRUD and membership helper methods
+- `python/vfarm_device_sdk/async_capabilities.py`: async capability catalog CRUD and iterator methods
+- `python/vfarm_device_sdk/async_thresholds.py`: async device threshold CRUD and helper methods
+- `python/vfarm_device_sdk/async_device_capabilities.py`: async device capability override and calibration helpers
 - `python/vfarm_device_sdk/models.py`: typed Pydantic request/response models
 - `python/vfarm_device_sdk/exceptions.py`: API-specific exceptions
 - `examples/register_device.py`: device registration + ingest + latest reading example
@@ -141,7 +147,7 @@ with VFarmClient(base_url="http://localhost:8000", api_key="your-api-key") as cl
     print(result.device.id, result.created)
 ```
 
-## Async usage (devices + commands + events + farms + ingestion + readings)
+## Async usage (alerts + automation + capability groups + capabilities + devices + commands + device capabilities + events + farms + ingestion + readings + sensor types + thresholds)
 
 ```python
 from vfarm_device_sdk import AsyncVFarmClient, DeviceCreate
@@ -175,6 +181,12 @@ async with AsyncVFarmClient(base_url="http://localhost:8000", api_key="your-api-
 
     farms = await client.list_farms(limit=5)
     print(farms.total)
+
+    thr = await client.set_temperature_limits(result.device.id, min_c=18.0, max_c=30.0)
+    print(thr.metric, thr.max_value)
+
+    caps = await client.list_device_capabilities(result.device.id)
+    print(caps.total)
 ```
 
 ## Current client surface
@@ -333,7 +345,7 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - Alerting and webhook configuration APIs
 - Advanced command helpers (typed payload builders for `set_state`, `set_value`, `custom`)
 - Async client (`httpx.AsyncClient`) for gateways and high-throughput workloads
-  - In progress: `AsyncVFarmClient` currently implements device + command + events + farms + ingestion + readings APIs with async transport and lifecycle support
+  - In progress: `AsyncVFarmClient` currently implements alerts + automation + capability groups + capabilities + device + command + device capabilities + events + farms + ingestion + readings + sensor types + thresholds APIs with async transport and lifecycle support
 
 ### Phase 4 (developer experience)
 

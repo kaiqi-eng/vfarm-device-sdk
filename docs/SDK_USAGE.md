@@ -45,9 +45,9 @@ with VFarmClient(
     print(result.created, result.device.id)
 ```
 
-## Async client (devices + commands + events + farms + ingestion + readings)
+## Async client (alerts + automation + capability groups + capabilities + devices + commands + device capabilities + events + farms + ingestion + readings + sensor types + thresholds)
 
-`AsyncVFarmClient` is now available for device, command, events, farms, ingestion, and readings endpoints with async lifecycle support.
+`AsyncVFarmClient` is now available for alerts, automation, capability groups, capabilities, device, command, device capabilities, events, farms, ingestion, readings, sensor type, and thresholds endpoints with async lifecycle support.
 
 ```python
 import asyncio
@@ -87,6 +87,12 @@ async def main() -> None:
         farms = await client.list_farms(limit=5)
         print(farms.total)
 
+        threshold = await client.set_temperature_limits(result.device.id, min_c=18.0, max_c=30.0)
+        print(threshold.metric, threshold.max_value)
+
+        capabilities = await client.list_device_capabilities(result.device.id)
+        print(capabilities.total)
+
 asyncio.run(main())
 ```
 
@@ -102,6 +108,15 @@ try:
 finally:
     client.close()
 ```
+
+## ID format rules
+
+Some SDK models enforce different ID patterns. The most common mismatch is using a device-style ID for sensor types.
+
+- `DeviceCreate.id` accepts letters, numbers, underscore, and hyphen (example: `sensor-001`).
+- `SensorTypeCreate.id` must be lowercase and underscore-only after the first letter (pattern: `^[a-z][a-z0-9_]*$`; example: `dht22`, `sdk_type_1`).
+
+If a sensor type ID contains a hyphen (for example `st-1`), Pydantic raises a validation error before the API call is made.
 
 ## Device APIs
 
@@ -451,6 +466,13 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `python/vfarm_device_sdk/async_farms.py`: async farms API methods
 - `python/vfarm_device_sdk/async_ingestion.py`: async ingestion API methods
 - `python/vfarm_device_sdk/async_readings.py`: async readings API methods
+- `python/vfarm_device_sdk/async_alerts.py`: async alerts API methods
+- `python/vfarm_device_sdk/async_automation.py`: async automation API methods
+- `python/vfarm_device_sdk/async_capability_groups.py`: async capability groups API methods
+- `python/vfarm_device_sdk/async_capabilities.py`: async capabilities API methods
+- `python/vfarm_device_sdk/async_sensor_types.py`: async sensor type API methods
+- `python/vfarm_device_sdk/async_thresholds.py`: async thresholds API methods
+- `python/vfarm_device_sdk/async_device_capabilities.py`: async device capabilities API methods
 - `python/vfarm_device_sdk/devices.py`: device API methods
 - `python/vfarm_device_sdk/events.py`: device events API methods
 - `python/vfarm_device_sdk/thresholds.py`: device thresholds API methods
@@ -460,6 +482,6 @@ docker run --rm --network vfarm_vfarm-network -v "<repo>:/work" -w /work -e FARM
 - `python/vfarm_device_sdk/readings.py`: readings and analytics API methods
 - `python/vfarm_device_sdk/commands.py`: command API methods
 - `python/vfarm_device_sdk/client.py`: composed `VFarmClient`
-- `python/vfarm_device_sdk/async_client.py`: composed `AsyncVFarmClient` (device + command + events + farms + ingestion + readings APIs)
+- `python/vfarm_device_sdk/async_client.py`: composed `AsyncVFarmClient` (alerts + automation + capability groups + capabilities + device + command + device capabilities + events + farms + ingestion + readings + sensor type + thresholds APIs)
 - `python/vfarm_device_sdk/models.py`: typed request/response models
 - `python/vfarm_device_sdk/exceptions.py`: SDK exception classes
