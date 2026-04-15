@@ -45,6 +45,7 @@ jobs:
       SDK_E2E_BASE_URL: http://localhost:8003
       SDK_E2E_SENSOR_TYPE: ${{ secrets.SDK_E2E_SENSOR_TYPE }}
       VFARM_REPO_URL: ${{ secrets.VFARM_REPO_URL != '' && secrets.VFARM_REPO_URL || 'https://github.com/stacxio/bhavfarm.git' }}
+      VFARM_REPO_TOKEN: ${{ secrets.VFARM_REPO_TOKEN }}
       VFARM_DIR: ${{ github.workspace }}/vfarm-upstream/vfarm
     steps:
       - name: Checkout
@@ -62,7 +63,20 @@ jobs:
 
       - name: Clone vfarm repository
         run: |
-          git clone "${VFARM_REPO_URL}" "${{ github.workspace }}/vfarm-upstream"
+          if [ -n "${VFARM_REPO_TOKEN}" ]; then
+            case "${VFARM_REPO_URL}" in
+              https://github.com/*)
+                AUTH_URL="${VFARM_REPO_URL/https:\/\/github.com\//https:\/\/x-access-token:${VFARM_REPO_TOKEN}@github.com\/}"
+                git clone "${AUTH_URL}" "${{ github.workspace }}/vfarm-upstream"
+                ;;
+              *)
+                echo "VFARM_REPO_TOKEN is set, but VFARM_REPO_URL is not an https://github.com/... URL"
+                exit 1
+                ;;
+            esac
+          else
+            git clone "${VFARM_REPO_URL}" "${{ github.workspace }}/vfarm-upstream"
+          fi
 
       - name: Create vfarm .env for docker compose
         run: |
