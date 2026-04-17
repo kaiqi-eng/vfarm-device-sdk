@@ -57,6 +57,23 @@ def _sensor_type() -> str:
     return os.environ.get("SDK_E2E_SENSOR_TYPE", "dht22")
 
 
+def _sensor_type_for_devices(client: VFarmClient) -> str:
+    preferred = _sensor_type()
+    try:
+        client._request("GET", f"/api/v1/sensor-types/{preferred}", timeout=60.0)
+        return preferred
+    except Exception:
+        pass
+
+    listing = client._request("GET", "/api/v1/sensor-types", params={"limit": 200, "offset": 0}, timeout=60.0)
+    rows = listing.get("sensor_types", [])
+    if not rows:
+        raise RuntimeError("No sensor types available for device registration E2E tests")
+
+    active_row = next((row for row in rows if row.get("is_active") is True), None)
+    return (active_row or rows[0])["id"]
+
+
 def _sensor_type_for_ingest(client: VFarmClient) -> str:
     preferred = _sensor_type()
     try:
@@ -163,13 +180,14 @@ def test_sdk_health_and_device_crud() -> None:
         assert health["status"] == "ok"
 
         _ensure_farm(client, farm_id)
+        sensor_type = _sensor_type_for_devices(client)
 
         created = client.register_device(
             DeviceCreate(
                 id=device_id,
                 farm_id=farm_id,
                 device_type="sensor",
-                sensor_type_id=_sensor_type(),
+                sensor_type_id=sensor_type,
                 device_model="DHT22",
                 location=DeviceLocation(rack_id="rack-x", node_id="node-x", position="px"),
                 firmware_version="1.2.0",
@@ -345,12 +363,13 @@ def test_sdk_generic_command_api_and_status_filters() -> None:
 
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
         _ensure_farm(client, farm_id)
+        sensor_type = _sensor_type_for_devices(client)
         client.ensure_device(
             DeviceCreate(
                 id=device_id,
                 farm_id=farm_id,
                 device_type="sensor",
-                sensor_type_id=_sensor_type(),
+                sensor_type_id=sensor_type,
                 device_model="DHT22",
                 location=DeviceLocation(rack_id="rack-z", node_id="node-z", position="pz"),
                 firmware_version="1.0.0",
@@ -405,12 +424,13 @@ def test_sdk_device_events_api() -> None:
 
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
         _ensure_farm(client, farm_id)
+        sensor_type = _sensor_type_for_devices(client)
         client.ensure_device(
             DeviceCreate(
                 id=device_id,
                 farm_id=farm_id,
                 device_type="sensor",
-                sensor_type_id=_sensor_type(),
+                sensor_type_id=sensor_type,
                 device_model="DHT22",
                 location=DeviceLocation(rack_id="rack-e", node_id="node-e", position="pe"),
                 firmware_version="1.0.0",
@@ -448,12 +468,13 @@ def test_sdk_device_thresholds_api() -> None:
 
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
         _ensure_farm(client, farm_id)
+        sensor_type = _sensor_type_for_devices(client)
         client.ensure_device(
             DeviceCreate(
                 id=device_id,
                 farm_id=farm_id,
                 device_type="sensor",
-                sensor_type_id=_sensor_type(),
+                sensor_type_id=sensor_type,
                 device_model="DHT22",
                 location=DeviceLocation(rack_id="rack-t", node_id="node-t", position="pt"),
                 firmware_version="1.0.0",
@@ -513,12 +534,13 @@ def test_sdk_device_capabilities_api() -> None:
 
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
         _ensure_farm(client, farm_id)
+        sensor_type = _sensor_type_for_devices(client)
         client.ensure_device(
             DeviceCreate(
                 id=device_id,
                 farm_id=farm_id,
                 device_type="sensor",
-                sensor_type_id=_sensor_type(),
+                sensor_type_id=sensor_type,
                 device_model="DHT22",
                 location=DeviceLocation(rack_id="rack-cap", node_id="node-cap", position="pc"),
                 firmware_version="1.0.0",
@@ -788,12 +810,13 @@ def test_sdk_automation_api() -> None:
 
     with VFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
         _ensure_farm(client, farm_id)
+        sensor_type = _sensor_type_for_devices(client)
         client.ensure_device(
             DeviceCreate(
                 id=source_device_id,
                 farm_id=farm_id,
                 device_type="sensor",
-                sensor_type_id=_sensor_type(),
+                sensor_type_id=sensor_type,
                 device_model="DHT22",
                 location=DeviceLocation(rack_id="rack-auto", node_id="node-src", position="p-src"),
                 firmware_version="1.0.0",

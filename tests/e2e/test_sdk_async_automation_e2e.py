@@ -31,6 +31,23 @@ def _sensor_type() -> str:
     return os.environ.get("SDK_E2E_SENSOR_TYPE", "dht22")
 
 
+async def _sensor_type_for_devices(client: AsyncVFarmClient) -> str:
+    preferred = _sensor_type()
+    try:
+        await client._request("GET", f"/api/v1/sensor-types/{preferred}", timeout=60.0)
+        return preferred
+    except Exception:
+        pass
+
+    listing = await client._request("GET", "/api/v1/sensor-types", params={"limit": 200, "offset": 0}, timeout=60.0)
+    rows = listing.get("sensor_types", [])
+    if not rows:
+        raise RuntimeError("No sensor types available for async device registration E2E tests")
+
+    active_row = next((row for row in rows if row.get("is_active") is True), None)
+    return (active_row or rows[0])["id"]
+
+
 def test_sdk_async_automation_flow() -> None:
     async def _test() -> None:
         suffix = uuid.uuid4().hex[:8]
@@ -39,6 +56,7 @@ def test_sdk_async_automation_flow() -> None:
         target_device_id = f"sdk-async-auto-tgt-{suffix}"
 
         async with AsyncVFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
+            sensor_type = await _sensor_type_for_devices(client)
             await client.ensure_farm(
                 farm_id=farm_id,
                 name="SDK Async Automation Farm",
@@ -49,7 +67,7 @@ def test_sdk_async_automation_flow() -> None:
                     id=source_device_id,
                     farm_id=farm_id,
                     device_type="sensor",
-                    sensor_type_id=_sensor_type(),
+                    sensor_type_id=sensor_type,
                     device_model="DHT22",
                     location=DeviceLocation(rack_id="rack-auto", node_id="node-src", position="p-src"),
                     firmware_version="1.0.0",
