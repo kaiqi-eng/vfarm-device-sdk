@@ -188,6 +188,41 @@ def test_async_alerts_crud_and_helpers() -> None:
     _run(harness.delete_alert_channel("ch_1"))
 
 
+def test_async_alert_create_methods_include_idempotency_header() -> None:
+    harness = _AsyncAlertsHarness()
+
+    _run(
+        harness.create_alert_channel(
+            AlertChannelCreate(
+                name="Channel A",
+                endpoint_url="https://example.com/hook",
+                http_method="POST",
+                headers={"X-Test": "1"},
+                timeout_ms=3000,
+                enabled=True,
+            ),
+            idempotency_key="alert-ch-key",
+        )
+    )
+    _run(
+        harness.create_alert_rule(
+            AlertRuleCreate(
+                name="Rule A",
+                event_types=["threshold_exceeded"],
+                severities=["warning"],
+                channel_ids=["ch_1"],
+                enabled=True,
+            ),
+            idempotency_key="alert-rule-key",
+        )
+    )
+
+    create_channel_call = next(c for c in harness.calls if c[0] == "POST" and c[1] == "/api/v1/alerts/channels")
+    create_rule_call = next(c for c in harness.calls if c[0] == "POST" and c[1] == "/api/v1/alerts/rules")
+    assert create_channel_call[2]["headers"]["Idempotency-Key"] == "alert-ch-key"
+    assert create_rule_call[2]["headers"]["Idempotency-Key"] == "alert-rule-key"
+
+
 def test_async_alert_iterators() -> None:
     harness = _AsyncAlertsHarness()
 

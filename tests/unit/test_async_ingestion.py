@@ -54,6 +54,28 @@ def test_async_ingest_and_health() -> None:
     assert health["status"] == "ok"
 
 
+def test_async_ingest_includes_idempotency_header_when_provided() -> None:
+    sdk = _AsyncIngestionHarness()
+    payload = IngestRequest.model_validate(
+        {
+            "schema_version": "1.0.0",
+            "sensor_id": "dev-1",
+            "sensor_type": "dht22",
+            "location": {"farm_id": "farm-a", "rack_id": "rack-1", "node_id": "node-1"},
+            "readings": {
+                "temperature": {"value": 24.1, "unit": "celsius", "status": "ok"},
+                "humidity": {"value": 59.2, "unit": "percent_rh", "status": "ok"},
+            },
+            "device": {"firmware": "1.0.0"},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+    _run(sdk.ingest(payload, idempotency_key="ingest-key-1"))
+    _, _, kwargs = sdk.calls[0]
+    assert kwargs["headers"]["Idempotency-Key"] == "ingest-key-1"
+
+
 def test_async_ingest_reading_builds_payload() -> None:
     sdk = _AsyncIngestionHarness()
     result = _run(
@@ -78,3 +100,23 @@ def test_async_ingest_reading_builds_payload() -> None:
     assert path == "/api/v1/ingest"
     assert kwargs["json"]["sensor_id"] == "dev-2"
     assert kwargs["json"]["sensor_type"] == "dht22"
+
+
+def test_async_ingest_reading_passes_idempotency_header() -> None:
+    sdk = _AsyncIngestionHarness()
+    _run(
+        sdk.ingest_reading(
+            sensor_id="dev-2",
+            sensor_type="dht22",
+            farm_id="farm-b",
+            rack_id="rack-2",
+            node_id="node-2",
+            firmware="1.0.1",
+            temperature_value=25.2,
+            humidity_value=54.8,
+            idempotency_key="ingest-key-2",
+        )
+    )
+
+    _, _, kwargs = sdk.calls[0]
+    assert kwargs["headers"]["Idempotency-Key"] == "ingest-key-2"

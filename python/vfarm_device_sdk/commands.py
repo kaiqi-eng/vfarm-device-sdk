@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from .idempotency import with_idempotency_header
 from .models import (
     CommandAcknowledge,
     CommandCreate,
@@ -51,11 +52,18 @@ class CommandApiMixin:
         data = self._request("GET", f"/api/v1/devices/{device_id}/commands", params=params)
         return CommandListResponse.model_validate(data)
 
-    def create_command(self, device_id: str, payload: CommandCreate) -> CommandResponse:
+    def create_command(
+        self,
+        device_id: str,
+        payload: CommandCreate,
+        *,
+        idempotency_key: str | None = None,
+    ) -> CommandResponse:
         data = self._request(
             "POST",
             f"/api/v1/devices/{device_id}/commands",
             json=payload.model_dump(mode="json", exclude_none=True),
+            headers=with_idempotency_header(headers=None, idempotency_key=idempotency_key),
         )
         return CommandResponse.model_validate(data)
 
@@ -84,6 +92,7 @@ class CommandApiMixin:
         priority: int = 100,
         ttl_minutes: int = 60,
         notes: str | None = None,
+        idempotency_key: str | None = None,
     ) -> CommandResponse:
         return self.create_command(
             device_id,
@@ -97,6 +106,7 @@ class CommandApiMixin:
                 ttl_minutes=ttl_minutes,
                 notes=notes,
             ),
+            idempotency_key=idempotency_key,
         )
 
     def enqueue_restart_service(
@@ -109,6 +119,7 @@ class CommandApiMixin:
         priority: int = 100,
         ttl_minutes: int = 60,
         notes: str | None = None,
+        idempotency_key: str | None = None,
     ) -> CommandResponse:
         return self.create_command(
             device_id,
@@ -123,6 +134,7 @@ class CommandApiMixin:
                 ttl_minutes=ttl_minutes,
                 notes=notes,
             ),
+            idempotency_key=idempotency_key,
         )
 
     def enqueue_set_state(
@@ -136,6 +148,7 @@ class CommandApiMixin:
         ttl_minutes: int = 60,
         notes: str | None = None,
         payload_extra: dict[str, object] | None = None,
+        idempotency_key: str | None = None,
     ) -> CommandResponse:
         typed_payload = SetStatePayload(
             target=target,
@@ -152,6 +165,7 @@ class CommandApiMixin:
                 ttl_minutes=ttl_minutes,
                 notes=notes,
             ),
+            idempotency_key=idempotency_key,
         )
 
     def enqueue_set_value(
@@ -166,6 +180,7 @@ class CommandApiMixin:
         ttl_minutes: int = 60,
         notes: str | None = None,
         payload_extra: dict[str, object] | None = None,
+        idempotency_key: str | None = None,
     ) -> CommandResponse:
         typed_payload = SetValuePayload(
             target=target,
@@ -183,6 +198,7 @@ class CommandApiMixin:
                 ttl_minutes=ttl_minutes,
                 notes=notes,
             ),
+            idempotency_key=idempotency_key,
         )
 
     def enqueue_custom(
@@ -196,6 +212,7 @@ class CommandApiMixin:
         ttl_minutes: int = 60,
         notes: str | None = None,
         payload_extra: dict[str, object] | None = None,
+        idempotency_key: str | None = None,
     ) -> CommandResponse:
         typed_payload = CustomPayload(
             action=action,
@@ -212,4 +229,5 @@ class CommandApiMixin:
                 ttl_minutes=ttl_minutes,
                 notes=notes,
             ),
+            idempotency_key=idempotency_key,
         )

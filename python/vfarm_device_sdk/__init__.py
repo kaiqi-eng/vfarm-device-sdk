@@ -1,6 +1,7 @@
 from .client import VFarmClient
 from .async_client import AsyncVFarmClient
 from .core import RetryPolicy
+from .idempotency import generate_idempotency_key
 from .exceptions import (
     AuthenticationError,
     ConflictError,
@@ -200,6 +201,7 @@ __all__ = [
     "ValidationError",
     "VFarmApiError",
     "RetryPolicy",
+    "generate_idempotency_key",
     "AsyncVFarmClient",
     "VFarmClient",
 ]

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .exceptions import VFarmApiError
+from .idempotency import with_idempotency_header
 from .models import (
     IngestDeviceInfo,
     IngestErrorInfo,
@@ -16,7 +17,13 @@ from .models import (
 
 
 class IngestionApiMixin:
-    def ingest(self, payload: IngestRequest, *, auto_register: bool = False) -> IngestResponse:
+    def ingest(
+        self,
+        payload: IngestRequest,
+        *,
+        auto_register: bool = False,
+        idempotency_key: str | None = None,
+    ) -> IngestResponse:
         path = "/api/v1/ingest"
         params = {"auto_register": "true"} if auto_register else None
         data = self._request(
@@ -24,6 +31,7 @@ class IngestionApiMixin:
             path,
             params=params,
             json=payload.model_dump(mode="json", exclude_none=True),
+            headers=with_idempotency_header(headers=None, idempotency_key=idempotency_key),
         )
         return IngestResponse.model_validate(data)
 
@@ -47,6 +55,7 @@ class IngestionApiMixin:
         error_code: str | None = None,
         error_message: str | None = None,
         auto_register: bool = False,
+        idempotency_key: str | None = None,
     ) -> IngestResponse:
         payload = IngestRequest(
             schema_version=schema_version,
@@ -81,7 +90,7 @@ class IngestionApiMixin:
                 else None
             ),
         )
-        return self.ingest(payload, auto_register=auto_register)
+        return self.ingest(payload, auto_register=auto_register, idempotency_key=idempotency_key)
 
     def health(self) -> dict[str, Any]:
         data = self._request("GET", "/api/v1/health")

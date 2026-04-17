@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from urllib.parse import quote
 
+from .idempotency import with_idempotency_header
 from .models import (
     AlertChannelCreate,
     AlertChannelListResponse,
@@ -34,8 +35,18 @@ class AlertsApiMixin:
         data = self._request("GET", f"/api/v1/alerts/channels/{quote(channel_id, safe='')}")
         return AlertChannelResponse.model_validate(data)
 
-    def create_alert_channel(self, payload: AlertChannelCreate) -> AlertChannelResponse:
-        data = self._request("POST", "/api/v1/alerts/channels", json=payload.model_dump(mode="json", exclude_none=True))
+    def create_alert_channel(
+        self,
+        payload: AlertChannelCreate,
+        *,
+        idempotency_key: str | None = None,
+    ) -> AlertChannelResponse:
+        data = self._request(
+            "POST",
+            "/api/v1/alerts/channels",
+            json=payload.model_dump(mode="json", exclude_none=True),
+            headers=with_idempotency_header(headers=None, idempotency_key=idempotency_key),
+        )
         return AlertChannelResponse.model_validate(data)
 
     def update_alert_channel(self, channel_id: str, payload: AlertChannelUpdate) -> AlertChannelResponse:
@@ -74,8 +85,18 @@ class AlertsApiMixin:
         data = self._request("GET", f"/api/v1/alerts/rules/{quote(rule_id, safe='')}")
         return AlertRuleResponse.model_validate(data)
 
-    def create_alert_rule(self, payload: AlertRuleCreate) -> AlertRuleResponse:
-        data = self._request("POST", "/api/v1/alerts/rules", json=payload.model_dump(mode="json", exclude_none=True))
+    def create_alert_rule(
+        self,
+        payload: AlertRuleCreate,
+        *,
+        idempotency_key: str | None = None,
+    ) -> AlertRuleResponse:
+        data = self._request(
+            "POST",
+            "/api/v1/alerts/rules",
+            json=payload.model_dump(mode="json", exclude_none=True),
+            headers=with_idempotency_header(headers=None, idempotency_key=idempotency_key),
+        )
         return AlertRuleResponse.model_validate(data)
 
     def update_alert_rule(self, rule_id: str, payload: AlertRuleUpdate) -> AlertRuleResponse:

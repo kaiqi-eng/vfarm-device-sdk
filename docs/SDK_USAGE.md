@@ -160,11 +160,12 @@ client.delete_device("sensor-002")
 
 Low-level method:
 
-- `ingest(payload, auto_register=False)`
+- `ingest(payload, auto_register=False, idempotency_key=None)`
 
 High-level convenience wrapper:
 
 - `ingest_reading(sensor_id=..., sensor_type=..., farm_id=..., rack_id=..., node_id=..., firmware=..., temperature_value=..., humidity_value=..., ...)`
+- `ingest_reading(..., idempotency_key=None)`
 
 Use low-level `ingest` if you already construct `IngestRequest`.
 Use `ingest_reading` for simpler call sites.
@@ -187,6 +188,62 @@ ingest_result = client.ingest_reading(
 )
 print(ingest_result.id, ingest_result.received_at)
 ```
+
+## Idempotency keys and safe retries
+
+Use idempotency keys for write operations that might be retried after timeouts/transient failures.
+
+- Header sent by SDK: `Idempotency-Key`
+- Helper: `generate_idempotency_key(prefix=None)`
+- Behavior: SDK forwards the key; duplicate-prevention safety depends on backend endpoint semantics.
+
+Sync example:
+
+```python
+from vfarm_device_sdk import CommandCreate, VFarmClient, generate_idempotency_key
+
+with VFarmClient(base_url="http://localhost:8003", api_key="...") as client:
+    key = generate_idempotency_key("command")
+    command = client.create_command(
+        "sensor-001",
+        CommandCreate(command_type="custom", payload={"action": "sync_profile"}),
+        idempotency_key=key,
+    )
+    print(command.id)
+```
+
+Async example:
+
+```python
+from vfarm_device_sdk import AsyncVFarmClient, generate_idempotency_key
+
+async with AsyncVFarmClient(base_url="http://localhost:8003", api_key="...") as client:
+    key = generate_idempotency_key("ingest")
+    result = await client.ingest_reading(
+        sensor_id="sensor-001",
+        sensor_type="dht22",
+        farm_id="farm-alpha",
+        rack_id="rack-a",
+        node_id="node-1",
+        firmware="1.0.0",
+        temperature_value=24.6,
+        humidity_value=57.3,
+        idempotency_key=key,
+    )
+    print(result.id)
+```
+
+Safe-to-retry matrix:
+
+| Operation | Default retry safety | With `idempotency_key` | Notes |
+| --- | --- | --- | --- |
+| `GET/HEAD/OPTIONS/DELETE` | Safe by default | N/A | Idempotent/read-only semantics. |
+| `create_command` | Not safe by default | Conditionally safer | Use key for duplicate suppression when endpoint semantics support dedupe. |
+| `ingest` / `ingest_reading` | Not safe by default | Conditionally safer | Use key when retrying sensor submissions. |
+| `create_automation_rule` | Not safe by default | Conditionally safer | Use key to reduce duplicate rule creation risk. |
+| `create_alert_channel` | Not safe by default | Conditionally safer | Use key to reduce duplicate channel creation risk. |
+| `create_alert_rule` | Not safe by default | Conditionally safer | Use key to reduce duplicate rule creation risk. |
+| Other `POST/PATCH` writes | Not safe by default | Conditionally safer | Safety depends on endpoint dedupe behavior. |
 
 ## Farm APIs
 
@@ -342,16 +399,17 @@ Reader polling and command execution support:
 - `fetch_pending_commands(device_id, limit=10)`
 - `list_device_commands(device_id, status=None, limit=50, offset=0)`
 - `create_command(device_id, payload)`
+- `create_command(device_id, payload, idempotency_key=None)`
 - `update_command_status(device_id, command_id, payload)`
 - `cancel_command(device_id, command_id)`
 
 Convenience command helpers:
 
-- `enqueue_config_update(device_id, changes=..., merge_strategy="patch", priority=100, ttl_minutes=60, notes=None)`
-- `enqueue_restart_service(device_id, reason=None, delay_seconds=5, graceful=True, priority=100, ttl_minutes=60, notes=None)`
-- `enqueue_set_state(device_id, target=..., state="on"|"off", reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None)`
-- `enqueue_set_value(device_id, target=..., value=..., unit=None, reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None)`
-- `enqueue_custom(device_id, action=..., params=None, reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None)`
+- `enqueue_config_update(device_id, changes=..., merge_strategy="patch", priority=100, ttl_minutes=60, notes=None, idempotency_key=None)`
+- `enqueue_restart_service(device_id, reason=None, delay_seconds=5, graceful=True, priority=100, ttl_minutes=60, notes=None, idempotency_key=None)`
+- `enqueue_set_state(device_id, target=..., state="on"|"off", reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None, idempotency_key=None)`
+- `enqueue_set_value(device_id, target=..., value=..., unit=None, reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None, idempotency_key=None)`
+- `enqueue_custom(device_id, action=..., params=None, reason=None, priority=100, ttl_minutes=60, notes=None, payload_extra=None, idempotency_key=None)`
 
 `payload_extra` is merged after typed payload fields and can override keys with the same name.
 

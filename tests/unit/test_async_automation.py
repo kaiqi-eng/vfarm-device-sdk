@@ -136,6 +136,23 @@ def test_async_automation_crud_stats_history() -> None:
     _run(harness.delete_automation_rule("rule_1"))
 
 
+def test_async_create_automation_rule_includes_idempotency_header() -> None:
+    harness = _AsyncAutomationHarness()
+    payload = AutomationRuleCreate(
+        name="Rule A",
+        source_device_ids=["dev_a"],
+        source_farm_ids=["farm_a"],
+        trigger_on="reading",
+        conditions=ConditionSimple(metric="temperature", operator=">", value=20.0),
+        target_device_ids=["dev_b"],
+        commands=[{"command_type": "restart_service", "payload": {"reason": "unit"}}],
+    )
+
+    _run(harness.create_automation_rule(payload, idempotency_key="automation-key-1"))
+    create_call = next(c for c in harness.calls if c[0] == "POST" and c[1] == "/api/v1/automation/rules")
+    assert create_call[2]["headers"]["Idempotency-Key"] == "automation-key-1"
+
+
 def test_async_iter_automation_rules_and_history() -> None:
     harness = _AsyncAutomationHarness()
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from urllib.parse import quote
 
+from .idempotency import with_idempotency_header
 from .models import (
     AutomationHistoryResponse,
     AutomationHistoryListResponse,
@@ -36,8 +37,18 @@ class AutomationApiMixin:
         data = self._request("GET", f"/api/v1/automation/rules/{quote(rule_id, safe='')}")
         return AutomationRuleResponse.model_validate(data)
 
-    def create_automation_rule(self, payload: AutomationRuleCreate) -> AutomationRuleResponse:
-        data = self._request("POST", "/api/v1/automation/rules", json=payload.model_dump(mode="json", exclude_none=True))
+    def create_automation_rule(
+        self,
+        payload: AutomationRuleCreate,
+        *,
+        idempotency_key: str | None = None,
+    ) -> AutomationRuleResponse:
+        data = self._request(
+            "POST",
+            "/api/v1/automation/rules",
+            json=payload.model_dump(mode="json", exclude_none=True),
+            headers=with_idempotency_header(headers=None, idempotency_key=idempotency_key),
+        )
         return AutomationRuleResponse.model_validate(data)
 
     def update_automation_rule(self, rule_id: str, payload: AutomationRuleUpdate) -> AutomationRuleResponse:

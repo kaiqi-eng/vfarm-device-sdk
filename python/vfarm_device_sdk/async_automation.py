@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from urllib.parse import quote
 
+from .idempotency import with_idempotency_header
 from .models import (
     AutomationHistoryResponse,
     AutomationHistoryListResponse,
@@ -36,8 +37,18 @@ class AsyncAutomationApiMixin:
         data = await self._request("GET", f"/api/v1/automation/rules/{quote(rule_id, safe='')}")
         return AutomationRuleResponse.model_validate(data)
 
-    async def create_automation_rule(self, payload: AutomationRuleCreate) -> AutomationRuleResponse:
-        data = await self._request("POST", "/api/v1/automation/rules", json=payload.model_dump(mode="json", exclude_none=True))
+    async def create_automation_rule(
+        self,
+        payload: AutomationRuleCreate,
+        *,
+        idempotency_key: str | None = None,
+    ) -> AutomationRuleResponse:
+        data = await self._request(
+            "POST",
+            "/api/v1/automation/rules",
+            json=payload.model_dump(mode="json", exclude_none=True),
+            headers=with_idempotency_header(headers=None, idempotency_key=idempotency_key),
+        )
         return AutomationRuleResponse.model_validate(data)
 
     async def update_automation_rule(self, rule_id: str, payload: AutomationRuleUpdate) -> AutomationRuleResponse:
