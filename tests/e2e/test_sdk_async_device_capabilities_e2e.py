@@ -39,6 +39,30 @@ async def _sensor_type_for_devices(client: AsyncVFarmClient) -> str:
     return (active_row or rows[0])["id"]
 
 
+async def _sensor_type_for_device_capabilities(client: AsyncVFarmClient) -> str:
+    preferred = _sensor_type()
+    try:
+        sensor_type = await client._request("GET", f"/api/v1/sensor-types/{preferred}", timeout=60.0)
+        if sensor_type.get("capabilities"):
+            return preferred
+    except Exception:
+        pass
+
+    listing = await client._request("GET", "/api/v1/sensor-types", params={"limit": 200, "offset": 0}, timeout=60.0)
+    for row in listing.get("sensor_types", []):
+        sensor_type_id = row.get("id")
+        if not sensor_type_id:
+            continue
+        try:
+            sensor_type = await client._request("GET", f"/api/v1/sensor-types/{sensor_type_id}", timeout=60.0)
+            if sensor_type.get("capabilities"):
+                return sensor_type_id
+        except Exception:
+            continue
+
+    raise RuntimeError("No sensor type with at least one capability was found for async device capability E2E tests")
+
+
 def test_sdk_async_device_capabilities_flow() -> None:
     async def _test() -> None:
         suffix = uuid.uuid4().hex[:8]
@@ -46,7 +70,7 @@ def test_sdk_async_device_capabilities_flow() -> None:
         device_id = f"sdk-async-dc-dev-{suffix}"
 
         async with AsyncVFarmClient(base_url=_base_url(), api_key=_api_key()) as client:
-            sensor_type = await _sensor_type_for_devices(client)
+            sensor_type = await _sensor_type_for_device_capabilities(client)
             await client.ensure_farm(
                 farm_id=farm_id,
                 name="SDK Async Device Capability Farm",
