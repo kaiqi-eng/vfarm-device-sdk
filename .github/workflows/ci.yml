@@ -36,7 +36,7 @@ jobs:
     needs: unit-tests
     permissions:
       contents: read
-    if: ${{ secrets.FARM_API_KEY != '' && secrets.SUPABASE_DB_URL != '' && secrets.SUPABASE_URL != '' && secrets.SUPABASE_KEY != '' }}
+    if: ${{ env.FARM_API_KEY != '' && env.SUPABASE_DB_URL != '' && env.SUPABASE_URL != '' && env.SUPABASE_KEY != '' }}
     env:
       FARM_API_KEY: ${{ secrets.FARM_API_KEY }}
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
