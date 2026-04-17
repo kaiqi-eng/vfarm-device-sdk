@@ -1,5 +1,6 @@
 from .client import VFarmClient
 from .async_client import AsyncVFarmClient
+from .core import RetryPolicy
 from .exceptions import (
     AuthenticationError,
     ConflictError,
@@ -198,6 +199,7 @@ __all__ = [
     "SetValuePayload",
     "ValidationError",
     "VFarmApiError",
+    "RetryPolicy",
     "AsyncVFarmClient",
     "VFarmClient",
 ]
