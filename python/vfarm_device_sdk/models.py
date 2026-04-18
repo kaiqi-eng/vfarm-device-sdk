@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 DeviceType = Literal["gateway", "sensor", "controller", "actuator"]
@@ -646,9 +646,51 @@ class ConditionCompound(BaseModel):
     conditions: list[ConditionSimple | ConditionCompound] = Field(min_length=2)
 
 
+AutomationCommandPayload = (
+    ConfigUpdatePayload
+    | RestartServicePayload
+    | SetStatePayload
+    | SetValuePayload
+    | CustomPayload
+)
+
+
 class AutomationCommandSpec(BaseModel):
     command_type: CommandType
-    payload: dict[str, Any] = Field(default_factory=dict)
+    payload: AutomationCommandPayload = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_payload_for_command_type(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        command_type = data.get("command_type")
+        payload = data.get("payload", {})
+
+        payload_models: dict[str, type[BaseModel]] = {
+            "config_update": ConfigUpdatePayload,
+            "restart_service": RestartServicePayload,
+            "set_state": SetStatePayload,
+            "set_value": SetValuePayload,
+            "custom": CustomPayload,
+        }
+        payload_model = payload_models.get(command_type)
+        if payload_model is None:
+            return data
+
+        if isinstance(payload, BaseModel):
+            if isinstance(payload, payload_model):
+                return data
+            raise ValueError(
+                f"Payload model type does not match command_type='{command_type}': "
+                f"expected {payload_model.__name__}, got {type(payload).__name__}"
+            )
+
+        validated_payload = payload_model.model_validate(payload if payload is not None else {})
+        normalized = dict(data)
+        normalized["payload"] = validated_payload
+        return normalized
 
 
 class AutomationRuleCreate(BaseModel):
