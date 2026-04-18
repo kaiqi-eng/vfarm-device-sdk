@@ -1,0 +1,12 @@
+﻿{
+  "source": {
+    "repo_url": "https://github.com/stacxio/bhavfarm",
+    "service_path": "vfarm",
+    "openapi_endpoint": "http://localhost:8003/openapi.json"
+  },
+  "pinned_ref": {
+    "type": "snapshot",
+    "value": "local-openapi-2026-04-18"
+  },
+  "notes": "Update upstream_openapi_candidate.json from current upstream before merge; move snapshot forward only after compatibility review."
+}

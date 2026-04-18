@@ -109,6 +109,72 @@ finally:
     client.close()
 ```
 
+## Timeout and retry policy
+
+`VFarmClient` and `AsyncVFarmClient` accept:
+
+- `timeout` (seconds, default `10.0`)
+- `retry_policy` (`RetryPolicy`, defaults shown below)
+
+Default resilience behavior:
+
+- Safe methods (`GET`, `HEAD`, `OPTIONS`, `DELETE`) retry by default.
+- Unsafe methods (`POST`, `PATCH`) do not retry unless explicitly opted in.
+- Retry triggers: `429`, `5xx`, timeout/network errors.
+- Backoff: exponential + full jitter, with optional `Retry-After` respect.
+
+```python
+from vfarm_device_sdk import RetryPolicy, VFarmClient
+
+policy = RetryPolicy(
+    max_retries=3,
+    base_delay_s=0.2,
+    max_delay_s=2.0,
+    allow_unsafe_retries=False,
+)
+
+with VFarmClient(
+    base_url="http://localhost:8003",
+    api_key="...",
+    timeout=10.0,
+    retry_policy=policy,
+) as client:
+    # Safe GET: retries by default
+    health = client.health()
+```
+
+```python
+from vfarm_device_sdk import AsyncVFarmClient, RetryPolicy, generate_idempotency_key
+
+async with AsyncVFarmClient(
+    base_url="http://localhost:8003",
+    api_key="...",
+    timeout=15.0,
+    retry_policy=RetryPolicy(allow_unsafe_retries=False),
+) as client:
+    # Unsafe POST: explicit retry opt-in at call path + idempotency key
+    key = generate_idempotency_key("ingest")
+    await client.ingest_reading(
+        sensor_id="sensor-001",
+        sensor_type="dht22",
+        farm_id="farm-alpha",
+        rack_id="rack-a",
+        node_id="node-1",
+        firmware="1.0.0",
+        temperature_value=24.6,
+        humidity_value=57.3,
+        idempotency_key=key,
+    )
+```
+
+Retry behavior matrix:
+
+| Method class | Default retries | Recommended override |
+| --- | --- | --- |
+| `GET/HEAD/OPTIONS/DELETE` | Enabled | Keep default unless strict fail-fast is required (`retry=False`) |
+| `POST/PATCH` without idempotency | Disabled | Keep disabled |
+| `POST/PATCH` with idempotency key | Disabled by default | Enable selectively (`retry=True` or `allow_unsafe_retries=True`) |
+
 ## ID format rules
 
 Some SDK models enforce different ID patterns. The most common mismatch is using a device-style ID for sensor types.

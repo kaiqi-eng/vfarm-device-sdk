@@ -1,0 +1,90 @@
+﻿{
+  "schema_version": 1,
+  "checks": [
+    {
+      "name": "Ingest request",
+      "path": "/api/v1/ingest",
+      "method": "post",
+      "direction": "request",
+      "openapi_component": "IngestPayload",
+      "sdk_model": "IngestRequest"
+    },
+    {
+      "name": "Ingest response",
+      "path": "/api/v1/ingest",
+      "method": "post",
+      "direction": "response",
+      "status": "201",
+      "openapi_component": "IngestResponse",
+      "sdk_model": "IngestResponse"
+    },
+    {
+      "name": "Create command request",
+      "path": "/api/v1/devices/{device_id}/commands",
+      "method": "post",
+      "direction": "request",
+      "openapi_component": "CommandCreate",
+      "sdk_model": "CommandCreate"
+    },
+    {
+      "name": "Create command response",
+      "path": "/api/v1/devices/{device_id}/commands",
+      "method": "post",
+      "direction": "response",
+      "status": "201",
+      "openapi_component": "CommandResponse",
+      "sdk_model": "CommandResponse"
+    },
+    {
+      "name": "Create automation rule request",
+      "path": "/api/v1/automation/rules",
+      "method": "post",
+      "direction": "request",
+      "openapi_component": "AutomationRuleCreate",
+      "sdk_model": "AutomationRuleCreate"
+    },
+    {
+      "name": "Create automation rule response",
+      "path": "/api/v1/automation/rules",
+      "method": "post",
+      "direction": "response",
+      "status": "201",
+      "openapi_component": "AutomationRuleResponse",
+      "sdk_model": "AutomationRuleResponse"
+    },
+    {
+      "name": "Create alert channel request",
+      "path": "/api/v1/alerts/channels",
+      "method": "post",
+      "direction": "request",
+      "openapi_component": "AlertChannelCreate",
+      "sdk_model": "AlertChannelCreate"
+    },
+    {
+      "name": "Create alert channel response",
+      "path": "/api/v1/alerts/channels",
+      "method": "post",
+      "direction": "response",
+      "status": "201",
+      "openapi_component": "AlertChannelResponse",
+      "sdk_model": "AlertChannelResponse"
+    },
+    {
+      "name": "Create alert rule request",
+      "path": "/api/v1/alerts/rules",
+      "method": "post",
+      "direction": "request",
+      "openapi_component": "AlertRuleCreate",
+      "sdk_model": "AlertRuleCreate"
+    },
+    {
+      "name": "Create alert rule response",
+      "path": "/api/v1/alerts/rules",
+      "method": "post",
+      "direction": "response",
+      "status": "201",
+      "openapi_component": "AlertRuleResponse",
+      "sdk_model": "AlertRuleResponse"
+    }
+  ]
+}

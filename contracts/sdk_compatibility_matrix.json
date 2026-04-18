@@ -1,0 +1,13 @@
+﻿{
+  "schema_version": 1,
+  "entries": [
+    {
+      "sdk_version": "0.1.1",
+      "sdk_tag": "v0.1.1",
+      "vfarm_api_ref": "local-openapi-2026-04-18",
+      "contract_status": "verified",
+      "verified_at": "2026-04-18",
+      "notes": "Validated against upstream_openapi_snapshot.json and CI contract checks."
+    }
+  ]
+}
