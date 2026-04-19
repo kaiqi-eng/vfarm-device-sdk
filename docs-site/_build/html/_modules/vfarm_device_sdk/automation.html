@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vfarm_device_sdk.automation &#8212; vfarm-device-sdk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for vfarm_device_sdk.automation</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.idempotency</span><span class="w"> </span><span class="kn">import</span> <span class="n">with_idempotency_header</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AutomationHistoryResponse</span><span class="p">,</span>
+    <span class="n">AutomationHistoryListResponse</span><span class="p">,</span>
+    <span class="n">AutomationRuleCreate</span><span class="p">,</span>
+    <span class="n">AutomationRuleListResponse</span><span class="p">,</span>
+    <span class="n">AutomationRuleResponse</span><span class="p">,</span>
+    <span class="n">AutomationRuleUpdate</span><span class="p">,</span>
+    <span class="n">AutomationStatsResponse</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="AutomationApiMixin">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AutomationApiMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="AutomationApiMixin.list_automation_rules">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.list_automation_rules">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_automation_rules</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">trigger_on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationRuleListResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List automation rules with optional filters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        enabled:</span>
+<span class="sd">            Optional enabled-state filter.</span>
+<span class="sd">        trigger_on:</span>
+<span class="sd">            Optional trigger type filter.</span>
+<span class="sd">        limit:</span>
+<span class="sd">            Page size.</span>
+<span class="sd">        offset:</span>
+<span class="sd">            Page offset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationRuleListResponse</span>
+<span class="sd">            Paged automation rules.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           page = client.list_automation_rules(enabled=True, limit=20)</span>
+<span class="sd">           print(page.total)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="n">enabled</span><span class="p">,</span>
+            <span class="s2">&quot;trigger_on&quot;</span><span class="p">:</span> <span class="n">trigger_on</span><span class="p">,</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/automation/rules&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">AutomationRuleListResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.get_automation_rule">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.get_automation_rule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_automation_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationRuleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetch an automation rule by ID.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rule_id:</span>
+<span class="sd">            Rule identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationRuleResponse</span>
+<span class="sd">            Automation rule record.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           rule = client.get_automation_rule(&quot;rule-1&quot;)</span>
+<span class="sd">           print(rule.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Rule not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;/api/v1/automation/rules/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">AutomationRuleResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.create_automation_rule">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.create_automation_rule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_automation_rule</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">AutomationRuleCreate</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationRuleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create an automation rule.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Rule creation payload.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationRuleResponse</span>
+<span class="sd">            Created rule.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           rule = client.create_automation_rule(payload)</span>
+<span class="sd">           print(rule.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid rule payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``409`` -&gt; ``ConflictError``: Rule conflict.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;/api/v1/automation/rules&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">with_idempotency_header</span><span class="p">(</span><span class="n">headers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">AutomationRuleResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.update_automation_rule">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.update_automation_rule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_automation_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">AutomationRuleUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationRuleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update an automation rule.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rule_id:</span>
+<span class="sd">            Rule identifier.</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Rule update payload.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationRuleResponse</span>
+<span class="sd">            Updated rule.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           rule = client.update_automation_rule(&quot;rule-1&quot;, payload)</span>
+<span class="sd">           print(rule.enabled)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid update payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Rule not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;PATCH&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/automation/rules/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">AutomationRuleResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.delete_automation_rule">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.delete_automation_rule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_automation_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete an automation rule.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rule_id:</span>
+<span class="sd">            Rule identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">            Returns ``None`` on success.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           client.delete_automation_rule(&quot;rule-1&quot;)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Rule not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;DELETE&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;/api/v1/automation/rules/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.enable_automation_rule">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.enable_automation_rule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_automation_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationRuleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enable an automation rule.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rule_id:</span>
+<span class="sd">            Rule identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationRuleResponse</span>
+<span class="sd">            Updated enabled rule.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           rule = client.enable_automation_rule(&quot;rule-1&quot;)</span>
+<span class="sd">           print(rule.enabled)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Rule not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_automation_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span> <span class="n">AutomationRuleUpdate</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.disable_automation_rule">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.disable_automation_rule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable_automation_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationRuleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Disable an automation rule.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rule_id:</span>
+<span class="sd">            Rule identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationRuleResponse</span>
+<span class="sd">            Updated disabled rule.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           rule = client.disable_automation_rule(&quot;rule-1&quot;)</span>
+<span class="sd">           print(rule.enabled)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Rule not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_automation_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span> <span class="n">AutomationRuleUpdate</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.get_automation_stats">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.get_automation_stats">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_automation_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationStatsResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetch automation engine stats.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+<span class="sd">            This method takes no parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationStatsResponse</span>
+<span class="sd">            Aggregated automation stats.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           stats = client.get_automation_stats()</span>
+<span class="sd">           print(stats.total_rules)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/automation/stats&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">AutomationStatsResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.list_automation_history">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.list_automation_history">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_automation_history</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">rule_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">source_device_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">conditions_met</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutomationHistoryListResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List automation execution history with filters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rule_id:</span>
+<span class="sd">            Optional rule filter.</span>
+<span class="sd">        source_device_id:</span>
+<span class="sd">            Optional source device filter.</span>
+<span class="sd">        status:</span>
+<span class="sd">            Optional execution status filter.</span>
+<span class="sd">        conditions_met:</span>
+<span class="sd">            Optional conditions-met filter.</span>
+<span class="sd">        limit:</span>
+<span class="sd">            Page size.</span>
+<span class="sd">        offset:</span>
+<span class="sd">            Page offset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AutomationHistoryListResponse</span>
+<span class="sd">            Paged history records.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           history = client.list_automation_history(limit=20)</span>
+<span class="sd">           print(history.total)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;rule_id&quot;</span><span class="p">:</span> <span class="n">rule_id</span><span class="p">,</span>
+            <span class="s2">&quot;source_device_id&quot;</span><span class="p">:</span> <span class="n">source_device_id</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+            <span class="s2">&quot;conditions_met&quot;</span><span class="p">:</span> <span class="n">conditions_met</span><span class="p">,</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/automation/history&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">AutomationHistoryListResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.iter_automation_rules">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.iter_automation_rules">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">iter_automation_rules</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">trigger_on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">AutomationRuleResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate automation rules using automatic pagination.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        enabled:</span>
+<span class="sd">            Optional enabled-state filter.</span>
+<span class="sd">        trigger_on:</span>
+<span class="sd">            Optional trigger filter.</span>
+<span class="sd">        page_size:</span>
+<span class="sd">            Page size for each request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Iterator[AutomationRuleResponse]</span>
+<span class="sd">            Rule iterator.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           for rule in client.iter_automation_rules(page_size=50):</span>
+<span class="sd">               print(rule.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">page</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_automation_rules</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span> <span class="n">trigger_on</span><span class="o">=</span><span class="n">trigger_on</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">page_size</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">page</span><span class="o">.</span><span class="n">rules</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">rule</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">rules</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">offset</span> <span class="o">&gt;=</span> <span class="n">page</span><span class="o">.</span><span class="n">total</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">page</span><span class="o">.</span><span class="n">rules</span><span class="p">:</span>
+                <span class="k">break</span></div>
+
+
+<div class="viewcode-block" id="AutomationApiMixin.iter_automation_history">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin.iter_automation_history">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">iter_automation_history</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">rule_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">source_device_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">conditions_met</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">AutomationHistoryResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate automation history using automatic pagination.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rule_id:</span>
+<span class="sd">            Optional rule filter.</span>
+<span class="sd">        source_device_id:</span>
+<span class="sd">            Optional source device filter.</span>
+<span class="sd">        status:</span>
+<span class="sd">            Optional execution status filter.</span>
+<span class="sd">        conditions_met:</span>
+<span class="sd">            Optional conditions-met filter.</span>
+<span class="sd">        page_size:</span>
+<span class="sd">            Page size for each request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Iterator[AutomationHistoryResponse]</span>
+<span class="sd">            History iterator.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           for row in client.iter_automation_history(page_size=100):</span>
+<span class="sd">               print(row.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">page</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_automation_history</span><span class="p">(</span>
+                <span class="n">rule_id</span><span class="o">=</span><span class="n">rule_id</span><span class="p">,</span>
+                <span class="n">source_device_id</span><span class="o">=</span><span class="n">source_device_id</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">,</span>
+                <span class="n">conditions_met</span><span class="o">=</span><span class="n">conditions_met</span><span class="p">,</span>
+                <span class="n">limit</span><span class="o">=</span><span class="n">page_size</span><span class="p">,</span>
+                <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">page</span><span class="o">.</span><span class="n">history</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">row</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">history</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">offset</span> <span class="o">&gt;=</span> <span class="n">page</span><span class="o">.</span><span class="n">total</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">page</span><span class="o">.</span><span class="n">history</span><span class="p">:</span>
+                <span class="k">break</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">vfarm-device-sdk</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../error_codes/index.html">Error Codes Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docstring_template.html">Docstring Standard</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

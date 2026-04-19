@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vfarm_device_sdk.device_capabilities &#8212; vfarm-device-sdk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for vfarm_device_sdk.device_capabilities</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConflictError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DeviceCapabilityCreate</span><span class="p">,</span>
+    <span class="n">DeviceCapabilityListResponse</span><span class="p">,</span>
+    <span class="n">DeviceCapabilityResponse</span><span class="p">,</span>
+    <span class="n">DeviceCapabilityUpdate</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="DeviceCapabilitiesApiMixin">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeviceCapabilitiesApiMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="DeviceCapabilitiesApiMixin.list_device_capabilities">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin.list_device_capabilities">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_device_capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeviceCapabilityListResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List effective capabilities for a device.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DeviceCapabilityListResponse</span>
+<span class="sd">            Capability list with overrides.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           caps = client.list_device_capabilities(&quot;sensor-001&quot;)</span>
+<span class="sd">           print(caps.total)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">/capabilities&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">DeviceCapabilityListResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DeviceCapabilitiesApiMixin.create_device_capability_override">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin.create_device_capability_override">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_device_capability_override</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">DeviceCapabilityCreate</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeviceCapabilityResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a device-specific capability override.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Capability override payload.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DeviceCapabilityResponse</span>
+<span class="sd">            Created override response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           created = client.create_device_capability_override(&quot;sensor-001&quot;, DeviceCapabilityCreate(capability_id=&quot;temperature&quot;))</span>
+<span class="sd">           print(created.capability_id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid capability payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device/capability not found.</span>
+<span class="sd">        - ``409`` -&gt; ``ConflictError``: Override already exists.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">/capabilities&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">DeviceCapabilityResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DeviceCapabilitiesApiMixin.update_device_capability_override">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin.update_device_capability_override">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_device_capability_override</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">capability_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">DeviceCapabilityUpdate</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeviceCapabilityResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update a device capability override.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        capability_id:</span>
+<span class="sd">            Capability identifier.</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Capability update payload.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DeviceCapabilityResponse</span>
+<span class="sd">            Updated override response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           updated = client.update_device_capability_override(&quot;sensor-001&quot;, &quot;temperature&quot;, DeviceCapabilityUpdate(calibration_offset=0.1))</span>
+<span class="sd">           print(updated.calibration_offset)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid capability update payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Override not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;PATCH&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">/capabilities/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">capability_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">DeviceCapabilityResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DeviceCapabilitiesApiMixin.delete_device_capability_override">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin.delete_device_capability_override">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_device_capability_override</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">capability_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete a device capability override.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        capability_id:</span>
+<span class="sd">            Capability identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">            Returns ``None`` on success.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           client.delete_device_capability_override(&quot;sensor-001&quot;, &quot;temperature&quot;)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Override not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;DELETE&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">/capabilities/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">capability_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DeviceCapabilitiesApiMixin.upsert_device_capability_override">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin.upsert_device_capability_override">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upsert_device_capability_override</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">capability_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">calibration_offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">calibration_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">custom_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeviceCapabilityResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Upsert a device capability override.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        capability_id:</span>
+<span class="sd">            Capability identifier.</span>
+<span class="sd">        calibration_offset:</span>
+<span class="sd">            Calibration offset value.</span>
+<span class="sd">        calibration_scale:</span>
+<span class="sd">            Calibration scale multiplier.</span>
+<span class="sd">        custom_min:</span>
+<span class="sd">            Optional custom lower bound.</span>
+<span class="sd">        custom_max:</span>
+<span class="sd">            Optional custom upper bound.</span>
+<span class="sd">        enabled:</span>
+<span class="sd">            Whether this override is active.</span>
+<span class="sd">        notes:</span>
+<span class="sd">            Optional free-form note.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DeviceCapabilityResponse</span>
+<span class="sd">            Created or updated override.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           override = client.upsert_device_capability_override(&quot;sensor-001&quot;, capability_id=&quot;temperature&quot;, calibration_offset=0.1)</span>
+<span class="sd">           print(override.capability_id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid capability values.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device/capability not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">create_payload</span> <span class="o">=</span> <span class="n">DeviceCapabilityCreate</span><span class="p">(</span>
+            <span class="n">capability_id</span><span class="o">=</span><span class="n">capability_id</span><span class="p">,</span>
+            <span class="n">calibration_offset</span><span class="o">=</span><span class="n">calibration_offset</span><span class="p">,</span>
+            <span class="n">calibration_scale</span><span class="o">=</span><span class="n">calibration_scale</span><span class="p">,</span>
+            <span class="n">custom_min</span><span class="o">=</span><span class="n">custom_min</span><span class="p">,</span>
+            <span class="n">custom_max</span><span class="o">=</span><span class="n">custom_max</span><span class="p">,</span>
+            <span class="n">enabled</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span>
+            <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_device_capability_override</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span> <span class="n">create_payload</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ConflictError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_device_capability_override</span><span class="p">(</span>
+                <span class="n">device_id</span><span class="p">,</span>
+                <span class="n">capability_id</span><span class="p">,</span>
+                <span class="n">DeviceCapabilityUpdate</span><span class="p">(</span>
+                    <span class="n">calibration_offset</span><span class="o">=</span><span class="n">calibration_offset</span><span class="p">,</span>
+                    <span class="n">calibration_scale</span><span class="o">=</span><span class="n">calibration_scale</span><span class="p">,</span>
+                    <span class="n">custom_min</span><span class="o">=</span><span class="n">custom_min</span><span class="p">,</span>
+                    <span class="n">custom_max</span><span class="o">=</span><span class="n">custom_max</span><span class="p">,</span>
+                    <span class="n">enabled</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span>
+                    <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DeviceCapabilitiesApiMixin.calibrate_device_capability">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin.calibrate_device_capability">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calibrate_device_capability</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">capability_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeviceCapabilityResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convenience wrapper for calibration-only updates.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        capability_id:</span>
+<span class="sd">            Capability identifier.</span>
+<span class="sd">        offset:</span>
+<span class="sd">            Calibration offset.</span>
+<span class="sd">        scale:</span>
+<span class="sd">            Calibration scale multiplier.</span>
+<span class="sd">        notes:</span>
+<span class="sd">            Optional calibration note.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DeviceCapabilityResponse</span>
+<span class="sd">            Created or updated override with calibration fields.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           calibrated = client.calibrate_device_capability(&quot;sensor-001&quot;, &quot;temperature&quot;, offset=0.05, scale=1.0)</span>
+<span class="sd">           print(calibrated.calibration_offset)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid calibration values.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device/capability not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">upsert_device_capability_override</span><span class="p">(</span>
+            <span class="n">device_id</span><span class="p">,</span>
+            <span class="n">capability_id</span><span class="o">=</span><span class="n">capability_id</span><span class="p">,</span>
+            <span class="n">calibration_offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
+            <span class="n">calibration_scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+            <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">vfarm-device-sdk</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docstring_template.html">Docstring Standard</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

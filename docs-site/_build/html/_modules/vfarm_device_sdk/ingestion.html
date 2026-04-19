@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vfarm_device_sdk.ingestion &#8212; vfarm-device-sdk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for vfarm_device_sdk.ingestion</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">VFarmApiError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.idempotency</span><span class="w"> </span><span class="kn">import</span> <span class="n">with_idempotency_header</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">IngestDeviceInfo</span><span class="p">,</span>
+    <span class="n">IngestErrorInfo</span><span class="p">,</span>
+    <span class="n">IngestLocation</span><span class="p">,</span>
+    <span class="n">IngestReading</span><span class="p">,</span>
+    <span class="n">IngestRequest</span><span class="p">,</span>
+    <span class="n">IngestResponse</span><span class="p">,</span>
+    <span class="n">ReadingValue</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="IngestionApiMixin">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.ingestion.IngestionApiMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IngestionApiMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="IngestionApiMixin.ingest">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.ingestion.IngestionApiMixin.ingest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ingest</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">IngestRequest</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">auto_register</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Submit an ingest request to the readings pipeline.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Fully formed ingest request model.</span>
+<span class="sd">        auto_register:</span>
+<span class="sd">            Whether backend should auto-register missing devices.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency token sent as ``Idempotency-Key`` header.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        IngestResponse</span>
+<span class="sd">            Accepted ingestion response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           response = client.ingest(payload, auto_register=True)</span>
+<span class="sd">           print(response.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid ingest payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Referenced resource not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure or network issues.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/api/v1/ingest&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;auto_register&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">}</span> <span class="k">if</span> <span class="n">auto_register</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+            <span class="n">path</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">with_idempotency_header</span><span class="p">(</span><span class="n">headers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">IngestResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="IngestionApiMixin.ingest_reading">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.ingestion.IngestionApiMixin.ingest_reading">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ingest_reading</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">sensor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">sensor_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">rack_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">node_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">firmware</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">temperature_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">humidity_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">temperature_status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ok&quot;</span><span class="p">,</span>
+        <span class="n">humidity_status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ok&quot;</span><span class="p">,</span>
+        <span class="n">uptime_s</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">wifi_rssi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">schema_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+        <span class="n">error_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">error_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">auto_register</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build and submit a standard temperature/humidity ingest payload.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sensor_id:</span>
+<span class="sd">            Sensor/device identifier.</span>
+<span class="sd">        sensor_type:</span>
+<span class="sd">            Sensor type key.</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+<span class="sd">        rack_id:</span>
+<span class="sd">            Rack identifier.</span>
+<span class="sd">        node_id:</span>
+<span class="sd">            Node identifier.</span>
+<span class="sd">        firmware:</span>
+<span class="sd">            Firmware version string.</span>
+<span class="sd">        temperature_value:</span>
+<span class="sd">            Temperature reading value.</span>
+<span class="sd">        humidity_value:</span>
+<span class="sd">            Humidity reading value.</span>
+<span class="sd">        temperature_status:</span>
+<span class="sd">            Temperature status label.</span>
+<span class="sd">        humidity_status:</span>
+<span class="sd">            Humidity status label.</span>
+<span class="sd">        uptime_s:</span>
+<span class="sd">            Optional device uptime seconds.</span>
+<span class="sd">        wifi_rssi:</span>
+<span class="sd">            Optional Wi-Fi signal metric.</span>
+<span class="sd">        timestamp:</span>
+<span class="sd">            Optional sample timestamp; defaults to current UTC.</span>
+<span class="sd">        schema_version:</span>
+<span class="sd">            Payload schema version.</span>
+<span class="sd">        error_code:</span>
+<span class="sd">            Optional device-side error code.</span>
+<span class="sd">        error_message:</span>
+<span class="sd">            Optional device-side error message.</span>
+<span class="sd">        auto_register:</span>
+<span class="sd">            Whether backend should auto-register missing devices.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency token.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        IngestResponse</span>
+<span class="sd">            Accepted ingestion response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           result = client.ingest_reading(</span>
+<span class="sd">               sensor_id=&quot;sensor-001&quot;,</span>
+<span class="sd">               sensor_type=&quot;dht22&quot;,</span>
+<span class="sd">               farm_id=&quot;farm-a&quot;,</span>
+<span class="sd">               rack_id=&quot;rack-1&quot;,</span>
+<span class="sd">               node_id=&quot;node-1&quot;,</span>
+<span class="sd">               firmware=&quot;1.0.0&quot;,</span>
+<span class="sd">               temperature_value=24.2,</span>
+<span class="sd">               humidity_value=60.0,</span>
+<span class="sd">           )</span>
+<span class="sd">           print(result.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid reading payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Referenced resource not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure or network issues.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">IngestRequest</span><span class="p">(</span>
+            <span class="n">schema_version</span><span class="o">=</span><span class="n">schema_version</span><span class="p">,</span>
+            <span class="n">sensor_id</span><span class="o">=</span><span class="n">sensor_id</span><span class="p">,</span>
+            <span class="n">sensor_type</span><span class="o">=</span><span class="n">sensor_type</span><span class="p">,</span>
+            <span class="n">location</span><span class="o">=</span><span class="n">IngestLocation</span><span class="p">(</span>
+                <span class="n">farm_id</span><span class="o">=</span><span class="n">farm_id</span><span class="p">,</span>
+                <span class="n">rack_id</span><span class="o">=</span><span class="n">rack_id</span><span class="p">,</span>
+                <span class="n">node_id</span><span class="o">=</span><span class="n">node_id</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+            <span class="n">readings</span><span class="o">=</span><span class="n">IngestReading</span><span class="p">(</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">ReadingValue</span><span class="p">(</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">temperature_value</span><span class="p">,</span>
+                    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;celsius&quot;</span><span class="p">,</span>
+                    <span class="n">status</span><span class="o">=</span><span class="n">temperature_status</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">humidity</span><span class="o">=</span><span class="n">ReadingValue</span><span class="p">(</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">humidity_value</span><span class="p">,</span>
+                    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;percent_rh&quot;</span><span class="p">,</span>
+                    <span class="n">status</span><span class="o">=</span><span class="n">humidity_status</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">IngestDeviceInfo</span><span class="p">(</span>
+                <span class="n">firmware</span><span class="o">=</span><span class="n">firmware</span><span class="p">,</span>
+                <span class="n">uptime_s</span><span class="o">=</span><span class="n">uptime_s</span><span class="p">,</span>
+                <span class="n">wifi_rssi</span><span class="o">=</span><span class="n">wifi_rssi</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">error</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">IngestErrorInfo</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="n">error_code</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">error_message</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">error_code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ingest</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">auto_register</span><span class="o">=</span><span class="n">auto_register</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="IngestionApiMixin.health">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.ingestion.IngestionApiMixin.health">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read backend health status.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+<span class="sd">            This method takes no parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict[str, Any]</span>
+<span class="sd">            Health payload returned by the API.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           health = client.health()</span>
+<span class="sd">           print(health.get(&quot;status&quot;))</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure or unexpected payload shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/health&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">VFarmApiError</span><span class="p">(</span><span class="s2">&quot;Unexpected health response&quot;</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">vfarm-device-sdk</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docstring_template.html">Docstring Standard</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vfarm_device_sdk.farms &#8212; vfarm-device-sdk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for vfarm_device_sdk.farms</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConflictError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FarmCreate</span><span class="p">,</span> <span class="n">FarmListResponse</span><span class="p">,</span> <span class="n">FarmResponse</span><span class="p">,</span> <span class="n">FarmUpdate</span>
+
+
+<div class="viewcode-block" id="FarmApiMixin">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FarmApiMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="FarmApiMixin.list_farms">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.list_farms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_farms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">is_active</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FarmListResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List farms with optional active-state filtering.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        is_active:</span>
+<span class="sd">            Optional active flag filter.</span>
+<span class="sd">        limit:</span>
+<span class="sd">            Page size.</span>
+<span class="sd">        offset:</span>
+<span class="sd">            Page offset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FarmListResponse</span>
+<span class="sd">            Paged farm list.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           page = client.list_farms(is_active=True, limit=20)</span>
+<span class="sd">           print(page.total)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="n">is_active</span><span class="p">,</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/farms&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">FarmListResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.get_farm">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.get_farm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_farm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FarmResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetch a farm by ID.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FarmResponse</span>
+<span class="sd">            Farm record.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           farm = client.get_farm(&quot;farm-a&quot;)</span>
+<span class="sd">           print(farm.name)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Farm not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;/api/v1/farms/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">farm_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">FarmResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.create_farm">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.create_farm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_farm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FarmResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a farm.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+<span class="sd">        name:</span>
+<span class="sd">            Farm display name.</span>
+<span class="sd">        description:</span>
+<span class="sd">            Optional description.</span>
+<span class="sd">        address:</span>
+<span class="sd">            Optional address.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FarmResponse</span>
+<span class="sd">            Created farm record.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           farm = client.create_farm(farm_id=&quot;farm-a&quot;, name=&quot;Farm A&quot;)</span>
+<span class="sd">           print(farm.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid farm payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``409`` -&gt; ``ConflictError``: Farm ID already exists.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">FarmCreate</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">farm_id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/farms&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">FarmResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.update_farm">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.update_farm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_farm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_active</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FarmResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update mutable fields on a farm.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+<span class="sd">        name:</span>
+<span class="sd">            Optional updated name.</span>
+<span class="sd">        description:</span>
+<span class="sd">            Optional updated description.</span>
+<span class="sd">        address:</span>
+<span class="sd">            Optional updated address.</span>
+<span class="sd">        is_active:</span>
+<span class="sd">            Optional active-state update.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FarmResponse</span>
+<span class="sd">            Updated farm record.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           farm = client.update_farm(&quot;farm-a&quot;, address=&quot;123 Field Rd&quot;)</span>
+<span class="sd">           print(farm.address)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid update payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Farm not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">FarmUpdate</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="p">,</span>
+            <span class="n">is_active</span><span class="o">=</span><span class="n">is_active</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;PATCH&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/farms/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">farm_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">FarmResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.delete_farm">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.delete_farm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_farm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete a farm by ID.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">            Returns ``None`` on success.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           client.delete_farm(&quot;farm-a&quot;)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Farm not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;DELETE&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;/api/v1/farms/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">farm_id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.reactivate_farm">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.reactivate_farm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reactivate_farm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FarmResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mark a farm as active.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FarmResponse</span>
+<span class="sd">            Updated farm record.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           farm = client.reactivate_farm(&quot;farm-a&quot;)</span>
+<span class="sd">           print(farm.is_active)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Farm not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_farm</span><span class="p">(</span><span class="n">farm_id</span><span class="p">,</span> <span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.deactivate_farm">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.deactivate_farm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deactivate_farm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FarmResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mark a farm as inactive.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FarmResponse</span>
+<span class="sd">            Updated farm record.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           farm = client.deactivate_farm(&quot;farm-a&quot;)</span>
+<span class="sd">           print(farm.is_active)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Farm not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_farm</span><span class="p">(</span><span class="n">farm_id</span><span class="p">,</span> <span class="n">is_active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.ensure_farm">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.ensure_farm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ensure_farm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">farm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FarmResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ensure a farm exists, creating it if missing.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        farm_id:</span>
+<span class="sd">            Farm identifier.</span>
+<span class="sd">        name:</span>
+<span class="sd">            Farm display name.</span>
+<span class="sd">        description:</span>
+<span class="sd">            Optional description.</span>
+<span class="sd">        address:</span>
+<span class="sd">            Optional address.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FarmResponse</span>
+<span class="sd">            Existing or newly created farm.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           farm = client.ensure_farm(farm_id=&quot;farm-a&quot;, name=&quot;Farm A&quot;)</span>
+<span class="sd">           print(farm.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid farm payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Follow-up read could not find farm.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_farm</span><span class="p">(</span><span class="n">farm_id</span><span class="o">=</span><span class="n">farm_id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ConflictError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_farm</span><span class="p">(</span><span class="n">farm_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FarmApiMixin.iter_farms">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin.iter_farms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">iter_farms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">is_active</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FarmResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate farms using automatic pagination.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        is_active:</span>
+<span class="sd">            Optional active flag filter.</span>
+<span class="sd">        page_size:</span>
+<span class="sd">            Page size for each request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Iterator[FarmResponse]</span>
+<span class="sd">            Farm iterator.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           for farm in client.iter_farms(page_size=50):</span>
+<span class="sd">               print(farm.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">page</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_farms</span><span class="p">(</span><span class="n">is_active</span><span class="o">=</span><span class="n">is_active</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">page_size</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">farm</span> <span class="ow">in</span> <span class="n">page</span><span class="o">.</span><span class="n">farms</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">farm</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">farms</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">offset</span> <span class="o">&gt;=</span> <span class="n">page</span><span class="o">.</span><span class="n">total</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">page</span><span class="o">.</span><span class="n">farms</span><span class="p">:</span>
+                <span class="k">break</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">vfarm-device-sdk</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../error_codes/index.html">Error Codes Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docstring_template.html">Docstring Standard</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

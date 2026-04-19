@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vfarm_device_sdk.readings &#8212; vfarm-device-sdk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for vfarm_device_sdk.readings</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">NotFoundError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LatestReadingResponse</span><span class="p">,</span>
+    <span class="n">ReadingAnalyticsSnapshot</span><span class="p">,</span>
+    <span class="n">ReadingStatsResponse</span><span class="p">,</span>
+    <span class="n">ReadingsListResponse</span><span class="p">,</span>
+    <span class="n">StatsWindow</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="ReadingsApiMixin">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.readings.ReadingsApiMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReadingsApiMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="ReadingsApiMixin.get_latest_reading">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.readings.ReadingsApiMixin.get_latest_reading">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_latest_reading</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sensor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LatestReadingResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the latest reading for a sensor.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sensor_id:</span>
+<span class="sd">            Sensor identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        LatestReadingResponse</span>
+<span class="sd">            Latest sensor reading.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           latest = client.get_latest_reading(&quot;sensor-001&quot;)</span>
+<span class="sd">           print(latest.id, latest.sensor_id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: No reading exists for sensor.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/readings/latest&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sensor_id&quot;</span><span class="p">:</span> <span class="n">sensor_id</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">LatestReadingResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReadingsApiMixin.list_readings">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.readings.ReadingsApiMixin.list_readings">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_readings</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sensor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">from_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">to_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReadingsListResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List historical readings for a sensor.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sensor_id:</span>
+<span class="sd">            Sensor identifier.</span>
+<span class="sd">        from_time:</span>
+<span class="sd">            Optional lower time bound.</span>
+<span class="sd">        to_time:</span>
+<span class="sd">            Optional upper time bound.</span>
+<span class="sd">        limit:</span>
+<span class="sd">            Max records to return.</span>
+<span class="sd">        status:</span>
+<span class="sd">            Optional reading status filter.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ReadingsListResponse</span>
+<span class="sd">            Historical readings page.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           history = client.list_readings(&quot;sensor-001&quot;, limit=50)</span>
+<span class="sd">           print(history.total)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Sensor not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;sensor_id&quot;</span><span class="p">:</span> <span class="n">sensor_id</span><span class="p">,</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">from_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">&quot;from&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">from_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">to_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">&quot;to&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/readings&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ReadingsListResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReadingsApiMixin.get_reading_stats">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.readings.ReadingsApiMixin.get_reading_stats">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reading_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sensor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">StatsWindow</span> <span class="o">=</span> <span class="s2">&quot;24h&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReadingStatsResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get aggregated reading statistics for a time window.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sensor_id:</span>
+<span class="sd">            Sensor identifier.</span>
+<span class="sd">        window:</span>
+<span class="sd">            Stats window label.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ReadingStatsResponse</span>
+<span class="sd">            Aggregated statistics payload.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           stats = client.get_reading_stats(&quot;sensor-001&quot;, window=&quot;24h&quot;)</span>
+<span class="sd">           print(stats.total_readings)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid window value.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Sensor not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/readings/stats&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sensor_id&quot;</span><span class="p">:</span> <span class="n">sensor_id</span><span class="p">,</span> <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="n">window</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">ReadingStatsResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReadingsApiMixin.get_readings_analytics">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.readings.ReadingsApiMixin.get_readings_analytics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_readings_analytics</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sensor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">window</span><span class="p">:</span> <span class="n">StatsWindow</span> <span class="o">=</span> <span class="s2">&quot;24h&quot;</span><span class="p">,</span>
+        <span class="n">recent_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReadingAnalyticsSnapshot</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a combined analytics snapshot from latest, recent, and stats queries.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sensor_id:</span>
+<span class="sd">            Sensor identifier.</span>
+<span class="sd">        window:</span>
+<span class="sd">            Stats window label.</span>
+<span class="sd">        recent_limit:</span>
+<span class="sd">            Max records requested for recent history.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ReadingAnalyticsSnapshot</span>
+<span class="sd">            Combined analytics view.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           snapshot = client.get_readings_analytics(&quot;sensor-001&quot;, window=&quot;24h&quot;, recent_limit=100)</span>
+<span class="sd">           print(snapshot.sensor_id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Raised when stats/recent endpoints fail for missing sensor.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">latest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_latest_reading</span><span class="p">(</span><span class="n">sensor_id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">NotFoundError</span><span class="p">:</span>
+            <span class="n">latest</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">recent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_readings</span><span class="p">(</span><span class="n">sensor_id</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">recent_limit</span><span class="p">)</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reading_stats</span><span class="p">(</span><span class="n">sensor_id</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ReadingAnalyticsSnapshot</span><span class="p">(</span>
+            <span class="n">sensor_id</span><span class="o">=</span><span class="n">sensor_id</span><span class="p">,</span>
+            <span class="n">latest</span><span class="o">=</span><span class="n">latest</span><span class="p">,</span>
+            <span class="n">recent</span><span class="o">=</span><span class="n">recent</span><span class="p">,</span>
+            <span class="n">stats</span><span class="o">=</span><span class="n">stats</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">vfarm-device-sdk</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docstring_template.html">Docstring Standard</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

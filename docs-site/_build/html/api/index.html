@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>API Reference &#8212; vfarm-device-sdk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Core and Clients" href="core_clients.html" />
+    <link rel="prev" title="vfarm-device-sdk Documentation" href="../index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="core_clients.html">Core and Clients</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html#vfarm_device_sdk.core._default_retryable_status_codes"><code class="docutils literal notranslate"><span class="pre">_default_retryable_status_codes()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html#vfarm_device_sdk.core._default_retryable_methods"><code class="docutils literal notranslate"><span class="pre">_default_retryable_methods()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html#vfarm_device_sdk.core.RetryPolicy"><code class="docutils literal notranslate"><span class="pre">RetryPolicy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html#vfarm_device_sdk.core.VFarmApiClient"><code class="docutils literal notranslate"><span class="pre">VFarmApiClient</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html#vfarm_device_sdk.core.VFarmAsyncApiClient"><code class="docutils literal notranslate"><span class="pre">VFarmAsyncApiClient</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html#vfarm_device_sdk.client.VFarmClient"><code class="docutils literal notranslate"><span class="pre">VFarmClient</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html#vfarm_device_sdk.async_client.AsyncVFarmClient"><code class="docutils literal notranslate"><span class="pre">AsyncVFarmClient</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sync_apis.html">Sync API Mixins</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.devices.DeviceApiMixin"><code class="docutils literal notranslate"><span class="pre">DeviceApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.events.DeviceEventsApiMixin"><code class="docutils literal notranslate"><span class="pre">DeviceEventsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.thresholds.DeviceThresholdsApiMixin"><code class="docutils literal notranslate"><span class="pre">DeviceThresholdsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.device_capabilities.DeviceCapabilitiesApiMixin"><code class="docutils literal notranslate"><span class="pre">DeviceCapabilitiesApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.sensor_types.SensorTypeApiMixin"><code class="docutils literal notranslate"><span class="pre">SensorTypeApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.capabilities.CapabilitiesApiMixin"><code class="docutils literal notranslate"><span class="pre">CapabilitiesApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.capability_groups.CapabilityGroupsApiMixin"><code class="docutils literal notranslate"><span class="pre">CapabilityGroupsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.automation.AutomationApiMixin"><code class="docutils literal notranslate"><span class="pre">AutomationApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.alerts.AlertsApiMixin"><code class="docutils literal notranslate"><span class="pre">AlertsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.farms.FarmApiMixin"><code class="docutils literal notranslate"><span class="pre">FarmApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.ingestion.IngestionApiMixin"><code class="docutils literal notranslate"><span class="pre">IngestionApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.readings.ReadingsApiMixin"><code class="docutils literal notranslate"><span class="pre">ReadingsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin"><code class="docutils literal notranslate"><span class="pre">CommandApiMixin</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="async_apis.html">Async API Mixins</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_devices.AsyncDeviceApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncDeviceApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_events.AsyncDeviceEventsApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncDeviceEventsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_thresholds.AsyncDeviceThresholdsApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncDeviceThresholdsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_device_capabilities.AsyncDeviceCapabilitiesApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncDeviceCapabilitiesApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_sensor_types.AsyncSensorTypeApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncSensorTypeApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_capabilities.AsyncCapabilitiesApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncCapabilitiesApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_capability_groups.AsyncCapabilityGroupsApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncCapabilityGroupsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_automation.AsyncAutomationApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncAutomationApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_alerts.AsyncAlertsApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncAlertsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_farms.AsyncFarmApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncFarmApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_ingestion.AsyncIngestionApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncIngestionApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_readings.AsyncReadingsApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncReadingsApiMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html#vfarm_device_sdk.async_commands.AsyncCommandApiMixin"><code class="docutils literal notranslate"><span class="pre">AsyncCommandApiMixin</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models_exceptions.html">Models and Exceptions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceLocation"><code class="docutils literal notranslate"><span class="pre">DeviceLocation</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceCreate"><code class="docutils literal notranslate"><span class="pre">DeviceCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceUpdate"><code class="docutils literal notranslate"><span class="pre">DeviceUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceCreatedResponse"><code class="docutils literal notranslate"><span class="pre">DeviceCreatedResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceResponse"><code class="docutils literal notranslate"><span class="pre">DeviceResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceListResponse"><code class="docutils literal notranslate"><span class="pre">DeviceListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.EnsureDeviceResult"><code class="docutils literal notranslate"><span class="pre">EnsureDeviceResult</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceHeartbeatResponse"><code class="docutils literal notranslate"><span class="pre">DeviceHeartbeatResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceBatchCreateItem"><code class="docutils literal notranslate"><span class="pre">DeviceBatchCreateItem</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceBatchRegisterResponse"><code class="docutils literal notranslate"><span class="pre">DeviceBatchRegisterResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceMetadataResponse"><code class="docutils literal notranslate"><span class="pre">DeviceMetadataResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceMetadataUpdateResponse"><code class="docutils literal notranslate"><span class="pre">DeviceMetadataUpdateResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceEventResponse"><code class="docutils literal notranslate"><span class="pre">DeviceEventResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceEventsListResponse"><code class="docutils literal notranslate"><span class="pre">DeviceEventsListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceThresholdCreate"><code class="docutils literal notranslate"><span class="pre">DeviceThresholdCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceThresholdUpdate"><code class="docutils literal notranslate"><span class="pre">DeviceThresholdUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceThresholdResponse"><code class="docutils literal notranslate"><span class="pre">DeviceThresholdResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceThresholdListResponse"><code class="docutils literal notranslate"><span class="pre">DeviceThresholdListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceCapabilityCreate"><code class="docutils literal notranslate"><span class="pre">DeviceCapabilityCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceCapabilityUpdate"><code class="docutils literal notranslate"><span class="pre">DeviceCapabilityUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceCapabilityResponse"><code class="docutils literal notranslate"><span class="pre">DeviceCapabilityResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.DeviceCapabilityListResponse"><code class="docutils literal notranslate"><span class="pre">DeviceCapabilityListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SensorTypeCapabilityCreate"><code class="docutils literal notranslate"><span class="pre">SensorTypeCapabilityCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SensorTypeCreate"><code class="docutils literal notranslate"><span class="pre">SensorTypeCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SensorTypeUpdate"><code class="docutils literal notranslate"><span class="pre">SensorTypeUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SensorTypeCapabilityResponse"><code class="docutils literal notranslate"><span class="pre">SensorTypeCapabilityResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SensorTypeResponse"><code class="docutils literal notranslate"><span class="pre">SensorTypeResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SensorTypeListResponse"><code class="docutils literal notranslate"><span class="pre">SensorTypeListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityCreate"><code class="docutils literal notranslate"><span class="pre">CapabilityCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityUpdate"><code class="docutils literal notranslate"><span class="pre">CapabilityUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityResponse"><code class="docutils literal notranslate"><span class="pre">CapabilityResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityListResponse"><code class="docutils literal notranslate"><span class="pre">CapabilityListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityGroupCreate"><code class="docutils literal notranslate"><span class="pre">CapabilityGroupCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityGroupUpdate"><code class="docutils literal notranslate"><span class="pre">CapabilityGroupUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityGroupMemberResponse"><code class="docutils literal notranslate"><span class="pre">CapabilityGroupMemberResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityGroupResponse"><code class="docutils literal notranslate"><span class="pre">CapabilityGroupResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CapabilityGroupListResponse"><code class="docutils literal notranslate"><span class="pre">CapabilityGroupListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.FarmCreate"><code class="docutils literal notranslate"><span class="pre">FarmCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.FarmUpdate"><code class="docutils literal notranslate"><span class="pre">FarmUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.FarmResponse"><code class="docutils literal notranslate"><span class="pre">FarmResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.FarmListResponse"><code class="docutils literal notranslate"><span class="pre">FarmListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ReadingValue"><code class="docutils literal notranslate"><span class="pre">ReadingValue</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.IngestLocation"><code class="docutils literal notranslate"><span class="pre">IngestLocation</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.IngestDeviceInfo"><code class="docutils literal notranslate"><span class="pre">IngestDeviceInfo</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.IngestErrorInfo"><code class="docutils literal notranslate"><span class="pre">IngestErrorInfo</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.IngestReading"><code class="docutils literal notranslate"><span class="pre">IngestReading</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.IngestRequest"><code class="docutils literal notranslate"><span class="pre">IngestRequest</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.IngestResponse"><code class="docutils literal notranslate"><span class="pre">IngestResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ReadingRecordResponse"><code class="docutils literal notranslate"><span class="pre">ReadingRecordResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.LatestReadingResponse"><code class="docutils literal notranslate"><span class="pre">LatestReadingResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ReadingsListResponse"><code class="docutils literal notranslate"><span class="pre">ReadingsListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.TemperatureStatsValues"><code class="docutils literal notranslate"><span class="pre">TemperatureStatsValues</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.HumidityStatsValues"><code class="docutils literal notranslate"><span class="pre">HumidityStatsValues</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ReadingStatsResponse"><code class="docutils literal notranslate"><span class="pre">ReadingStatsResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ReadingAnalyticsSnapshot"><code class="docutils literal notranslate"><span class="pre">ReadingAnalyticsSnapshot</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ConfigUpdatePayload"><code class="docutils literal notranslate"><span class="pre">ConfigUpdatePayload</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.RestartServicePayload"><code class="docutils literal notranslate"><span class="pre">RestartServicePayload</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SetStatePayload"><code class="docutils literal notranslate"><span class="pre">SetStatePayload</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.SetValuePayload"><code class="docutils literal notranslate"><span class="pre">SetValuePayload</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CustomPayload"><code class="docutils literal notranslate"><span class="pre">CustomPayload</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CommandCreate"><code class="docutils literal notranslate"><span class="pre">CommandCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CommandAcknowledge"><code class="docutils literal notranslate"><span class="pre">CommandAcknowledge</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CommandResponse"><code class="docutils literal notranslate"><span class="pre">CommandResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.CommandListResponse"><code class="docutils literal notranslate"><span class="pre">CommandListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.PendingCommandsResponse"><code class="docutils literal notranslate"><span class="pre">PendingCommandsResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ConditionSimple"><code class="docutils literal notranslate"><span class="pre">ConditionSimple</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.ConditionCompound"><code class="docutils literal notranslate"><span class="pre">ConditionCompound</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationCommandSpec"><code class="docutils literal notranslate"><span class="pre">AutomationCommandSpec</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationRuleCreate"><code class="docutils literal notranslate"><span class="pre">AutomationRuleCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationRuleUpdate"><code class="docutils literal notranslate"><span class="pre">AutomationRuleUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationRuleResponse"><code class="docutils literal notranslate"><span class="pre">AutomationRuleResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationRuleListResponse"><code class="docutils literal notranslate"><span class="pre">AutomationRuleListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationHistoryResponse"><code class="docutils literal notranslate"><span class="pre">AutomationHistoryResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationHistoryListResponse"><code class="docutils literal notranslate"><span class="pre">AutomationHistoryListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AutomationStatsResponse"><code class="docutils literal notranslate"><span class="pre">AutomationStatsResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertChannelCreate"><code class="docutils literal notranslate"><span class="pre">AlertChannelCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertChannelUpdate"><code class="docutils literal notranslate"><span class="pre">AlertChannelUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertChannelResponse"><code class="docutils literal notranslate"><span class="pre">AlertChannelResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertChannelListResponse"><code class="docutils literal notranslate"><span class="pre">AlertChannelListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertRuleCreate"><code class="docutils literal notranslate"><span class="pre">AlertRuleCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertRuleUpdate"><code class="docutils literal notranslate"><span class="pre">AlertRuleUpdate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertRuleResponse"><code class="docutils literal notranslate"><span class="pre">AlertRuleResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertRuleListResponse"><code class="docutils literal notranslate"><span class="pre">AlertRuleListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertHistoryResponse"><code class="docutils literal notranslate"><span class="pre">AlertHistoryResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertHistoryListResponse"><code class="docutils literal notranslate"><span class="pre">AlertHistoryListResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.models.AlertTestResponse"><code class="docutils literal notranslate"><span class="pre">AlertTestResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.exceptions.VFarmApiError"><code class="docutils literal notranslate"><span class="pre">VFarmApiError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.exceptions.AuthenticationError"><code class="docutils literal notranslate"><span class="pre">AuthenticationError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.exceptions.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.exceptions.NotFoundError"><code class="docutils literal notranslate"><span class="pre">NotFoundError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html#vfarm_device_sdk.exceptions.ConflictError"><code class="docutils literal notranslate"><span class="pre">ConflictError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="internals.html">Internal Helpers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="internals.html#vfarm_device_sdk.idempotency.generate_idempotency_key"><code class="docutils literal notranslate"><span class="pre">generate_idempotency_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="internals.html#vfarm_device_sdk.idempotency.with_idempotency_header"><code class="docutils literal notranslate"><span class="pre">with_idempotency_header()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="internals.html#vfarm_device_sdk.idempotency._normalize_prefix"><code class="docutils literal notranslate"><span class="pre">_normalize_prefix()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">vfarm-device-sdk</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core_clients.html">Core and Clients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sync_apis.html">Sync API Mixins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="async_apis.html">Async API Mixins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_exceptions.html">Models and Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="internals.html">Internal Helpers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../error_codes/index.html">Error Codes Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docstring_template.html">Docstring Standard</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../index.html" title="previous chapter">vfarm-device-sdk Documentation</a></li>
+      <li>Next: <a href="core_clients.html" title="next chapter">Core and Clients</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/api/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

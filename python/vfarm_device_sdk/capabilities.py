@@ -22,6 +22,40 @@ class CapabilitiesApiMixin:
         limit: int = 100,
         offset: int = 0,
     ) -> CapabilityListResponse:
+        """
+        List capabilities with optional filters.
+
+        Parameters
+        ----------
+        category:
+            Optional category filter.
+        data_type:
+            Optional data-type filter.
+        is_active:
+            Optional active-state filter.
+        limit:
+            Page size.
+        offset:
+            Page offset.
+
+        Returns
+        -------
+        CapabilityListResponse
+            Paged capability list.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           page = client.list_capabilities(limit=50)
+           print(page.total)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid query parameters.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         params = {
             "category": category,
             "data_type": data_type,
@@ -33,14 +67,96 @@ class CapabilitiesApiMixin:
         return CapabilityListResponse.model_validate(data)
 
     def get_capability(self, capability_id: str) -> CapabilityResponse:
+        """
+        Fetch a capability by ID.
+
+        Parameters
+        ----------
+        capability_id:
+            Capability identifier.
+
+        Returns
+        -------
+        CapabilityResponse
+            Capability record.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           cap = client.get_capability("temperature")
+           print(cap.id)
+
+        Common Errors
+        -------------
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Capability not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = self._request("GET", f"/api/v1/capabilities/{quote(capability_id, safe='')}")
         return CapabilityResponse.model_validate(data)
 
     def create_capability(self, payload: CapabilityCreate) -> CapabilityResponse:
+        """
+        Create a capability.
+
+        Parameters
+        ----------
+        payload:
+            Capability creation payload.
+
+        Returns
+        -------
+        CapabilityResponse
+            Created capability.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           created = client.create_capability(payload)
+           print(created.id)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid capability payload.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``409`` -> ``ConflictError``: Capability already exists.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = self._request("POST", "/api/v1/capabilities", json=payload.model_dump(mode="json", exclude_none=True))
         return CapabilityResponse.model_validate(data)
 
     def update_capability(self, capability_id: str, payload: CapabilityUpdate) -> CapabilityResponse:
+        """
+        Update a capability.
+
+        Parameters
+        ----------
+        capability_id:
+            Capability identifier.
+        payload:
+            Capability update payload.
+
+        Returns
+        -------
+        CapabilityResponse
+            Updated capability.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           updated = client.update_capability("temperature", payload)
+           print(updated.name)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid update payload.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Capability not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = self._request(
             "PATCH",
             f"/api/v1/capabilities/{quote(capability_id, safe='')}",
@@ -49,9 +165,61 @@ class CapabilitiesApiMixin:
         return CapabilityResponse.model_validate(data)
 
     def delete_capability(self, capability_id: str) -> None:
+        """
+        Delete a capability by ID.
+
+        Parameters
+        ----------
+        capability_id:
+            Capability identifier.
+
+        Returns
+        -------
+        None
+            Returns ``None`` on success.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           client.delete_capability("temperature")
+
+        Common Errors
+        -------------
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Capability not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         self._request("DELETE", f"/api/v1/capabilities/{quote(capability_id, safe='')}")
 
     def ensure_capability(self, payload: CapabilityCreate) -> CapabilityResponse:
+        """
+        Ensure a capability exists, creating when missing.
+
+        Parameters
+        ----------
+        payload:
+            Capability creation payload.
+
+        Returns
+        -------
+        CapabilityResponse
+            Existing or created capability.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           cap = client.ensure_capability(payload)
+           print(cap.id)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid capability payload.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Follow-up read failed.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         try:
             return self.create_capability(payload)
         except ConflictError:
@@ -65,6 +233,38 @@ class CapabilitiesApiMixin:
         is_active: bool | None = None,
         page_size: int = 100,
     ) -> Iterator[CapabilityResponse]:
+        """
+        Iterate capabilities using automatic pagination.
+
+        Parameters
+        ----------
+        category:
+            Optional category filter.
+        data_type:
+            Optional data-type filter.
+        is_active:
+            Optional active-state filter.
+        page_size:
+            Page size for each API request.
+
+        Returns
+        -------
+        Iterator[CapabilityResponse]
+            Capability iterator.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           for cap in client.iter_capabilities(page_size=100):
+               print(cap.id)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid query parameters.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         offset = 0
         while True:
             page = self.list_capabilities(

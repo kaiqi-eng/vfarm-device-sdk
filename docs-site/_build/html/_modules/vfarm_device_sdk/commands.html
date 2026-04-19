@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vfarm_device_sdk.commands &#8212; vfarm-device-sdk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for vfarm_device_sdk.commands</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.idempotency</span><span class="w"> </span><span class="kn">import</span> <span class="n">with_idempotency_header</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CommandAcknowledge</span><span class="p">,</span>
+    <span class="n">CommandCreate</span><span class="p">,</span>
+    <span class="n">CommandListResponse</span><span class="p">,</span>
+    <span class="n">CommandResponse</span><span class="p">,</span>
+    <span class="n">CustomPayload</span><span class="p">,</span>
+    <span class="n">PendingCommandsResponse</span><span class="p">,</span>
+    <span class="n">SetStatePayload</span><span class="p">,</span>
+    <span class="n">SetValuePayload</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="CommandApiMixin">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CommandApiMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="CommandApiMixin._merge_payload_extra">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin._merge_payload_extra">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_merge_payload_extra</span><span class="p">(</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">],</span>
+        <span class="n">payload_extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge typed payload with optional override payload.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Base typed payload dict.</span>
+<span class="sd">        payload_extra:</span>
+<span class="sd">            Optional extra keys; overrides existing keys when duplicated.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict[str, object]</span>
+<span class="sd">            Merged payload dictionary.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           merged = CommandApiMixin._merge_payload_extra({&quot;target&quot;: &quot;relay&quot;}, {&quot;target&quot;: &quot;fan&quot;})</span>
+<span class="sd">           print(merged[&quot;target&quot;])</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``N/A`` -&gt; ``None``: Pure helper; no API request.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">merged</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">payload_extra</span><span class="p">:</span>
+            <span class="c1"># Intentionally allow extra keys to override typed payload keys.</span>
+            <span class="n">merged</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">payload_extra</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">merged</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.fetch_pending_commands">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.fetch_pending_commands">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fetch_pending_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PendingCommandsResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetch pending commands for a device.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        limit:</span>
+<span class="sd">            Maximum commands to return.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PendingCommandsResponse</span>
+<span class="sd">            Pending command list.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           pending = client.fetch_pending_commands(&quot;sensor-001&quot;, limit=5)</span>
+<span class="sd">           print(len(pending.commands))</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid query parameters.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2">/commands/pending&quot;</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PendingCommandsResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.list_device_commands">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.list_device_commands">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_device_commands</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandListResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List commands for a device with optional status filtering.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        status:</span>
+<span class="sd">            Optional command status filter.</span>
+<span class="sd">        limit:</span>
+<span class="sd">            Page size.</span>
+<span class="sd">        offset:</span>
+<span class="sd">            Page offset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandListResponse</span>
+<span class="sd">            Command history page.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           page = client.list_device_commands(&quot;sensor-001&quot;, status=&quot;pending&quot;)</span>
+<span class="sd">           print(page.total)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid filter values.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2">/commands&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CommandListResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.create_command">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.create_command">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_command</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">CommandCreate</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a command for a device.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Command creation payload.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandResponse</span>
+<span class="sd">            Created command response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           cmd = client.create_command(&quot;sensor-001&quot;, CommandCreate(command_type=&quot;custom&quot;, payload={&quot;action&quot;: &quot;sync&quot;}))</span>
+<span class="sd">           print(cmd.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid command payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``409`` -&gt; ``ConflictError``: Conflicting command state.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2">/commands&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">with_idempotency_header</span><span class="p">(</span><span class="n">headers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">CommandResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.update_command_status">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.update_command_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_command_status</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">command_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">CommandAcknowledge</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update a command status (for example acknowledged/completed).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        command_id:</span>
+<span class="sd">            Command identifier.</span>
+<span class="sd">        payload:</span>
+<span class="sd">            Status update payload.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandResponse</span>
+<span class="sd">            Updated command response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           updated = client.update_command_status(&quot;sensor-001&quot;, &quot;cmd-1&quot;, CommandAcknowledge(status=&quot;acknowledged&quot;))</span>
+<span class="sd">           print(updated.status)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid status payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device/command not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;PATCH&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2">/commands/</span><span class="si">{</span><span class="n">command_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">CommandResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.cancel_command">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.cancel_command">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cancel_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">command_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cancel a command by ID.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        command_id:</span>
+<span class="sd">            Command identifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">            Returns ``None`` on success.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           client.cancel_command(&quot;sensor-001&quot;, &quot;cmd-1&quot;)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device/command not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;DELETE&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;/api/v1/devices/</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2">/commands/</span><span class="si">{</span><span class="n">command_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.enqueue_config_update">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.enqueue_config_update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enqueue_config_update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">changes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">],</span>
+        <span class="n">merge_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;patch&quot;</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">ttl_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enqueue a typed ``config_update`` command.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        changes:</span>
+<span class="sd">            Configuration changes map.</span>
+<span class="sd">        merge_strategy:</span>
+<span class="sd">            Merge behavior (for example ``patch``).</span>
+<span class="sd">        priority:</span>
+<span class="sd">            Command priority.</span>
+<span class="sd">        ttl_minutes:</span>
+<span class="sd">            Expiry TTL in minutes.</span>
+<span class="sd">        notes:</span>
+<span class="sd">            Optional notes.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandResponse</span>
+<span class="sd">            Created command response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           cmd = client.enqueue_config_update(&quot;sensor-001&quot;, changes={&quot;poll_interval_s&quot;: 30})</span>
+<span class="sd">           print(cmd.command_type)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid command payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_command</span><span class="p">(</span>
+            <span class="n">device_id</span><span class="p">,</span>
+            <span class="n">CommandCreate</span><span class="p">(</span>
+                <span class="n">command_type</span><span class="o">=</span><span class="s2">&quot;config_update&quot;</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;changes&quot;</span><span class="p">:</span> <span class="n">changes</span><span class="p">,</span>
+                    <span class="s2">&quot;merge_strategy&quot;</span><span class="p">:</span> <span class="n">merge_strategy</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span>
+                <span class="n">ttl_minutes</span><span class="o">=</span><span class="n">ttl_minutes</span><span class="p">,</span>
+                <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.enqueue_restart_service">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.enqueue_restart_service">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enqueue_restart_service</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">delay_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">graceful</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">ttl_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enqueue a typed ``restart_service`` command.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        reason:</span>
+<span class="sd">            Optional restart reason.</span>
+<span class="sd">        delay_seconds:</span>
+<span class="sd">            Delay before restart.</span>
+<span class="sd">        graceful:</span>
+<span class="sd">            Whether restart should be graceful.</span>
+<span class="sd">        priority:</span>
+<span class="sd">            Command priority.</span>
+<span class="sd">        ttl_minutes:</span>
+<span class="sd">            Expiry TTL in minutes.</span>
+<span class="sd">        notes:</span>
+<span class="sd">            Optional notes.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandResponse</span>
+<span class="sd">            Created command response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           cmd = client.enqueue_restart_service(&quot;sensor-001&quot;, reason=&quot;firmware apply&quot;)</span>
+<span class="sd">           print(cmd.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid command payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_command</span><span class="p">(</span>
+            <span class="n">device_id</span><span class="p">,</span>
+            <span class="n">CommandCreate</span><span class="p">(</span>
+                <span class="n">command_type</span><span class="o">=</span><span class="s2">&quot;restart_service&quot;</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="n">reason</span><span class="p">,</span>
+                    <span class="s2">&quot;delay_seconds&quot;</span><span class="p">:</span> <span class="n">delay_seconds</span><span class="p">,</span>
+                    <span class="s2">&quot;graceful&quot;</span><span class="p">:</span> <span class="n">graceful</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span>
+                <span class="n">ttl_minutes</span><span class="o">=</span><span class="n">ttl_minutes</span><span class="p">,</span>
+                <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.enqueue_set_state">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.enqueue_set_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enqueue_set_state</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;on&quot;</span><span class="p">,</span> <span class="s2">&quot;off&quot;</span><span class="p">],</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">ttl_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">payload_extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enqueue a typed ``set_state`` command.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        target:</span>
+<span class="sd">            Target actuator/component.</span>
+<span class="sd">        state:</span>
+<span class="sd">            Desired state (``on`` or ``off``).</span>
+<span class="sd">        reason:</span>
+<span class="sd">            Optional reason.</span>
+<span class="sd">        priority:</span>
+<span class="sd">            Command priority.</span>
+<span class="sd">        ttl_minutes:</span>
+<span class="sd">            Expiry TTL in minutes.</span>
+<span class="sd">        notes:</span>
+<span class="sd">            Optional notes.</span>
+<span class="sd">        payload_extra:</span>
+<span class="sd">            Optional payload overrides.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandResponse</span>
+<span class="sd">            Created command response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           cmd = client.enqueue_set_state(&quot;sensor-001&quot;, target=&quot;relay-1&quot;, state=&quot;on&quot;)</span>
+<span class="sd">           print(cmd.command_type)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid command payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">typed_payload</span> <span class="o">=</span> <span class="n">SetStatePayload</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_payload_extra</span><span class="p">(</span><span class="n">typed_payload</span><span class="p">,</span> <span class="n">payload_extra</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_command</span><span class="p">(</span>
+            <span class="n">device_id</span><span class="p">,</span>
+            <span class="n">CommandCreate</span><span class="p">(</span>
+                <span class="n">command_type</span><span class="o">=</span><span class="s2">&quot;set_state&quot;</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+                <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span>
+                <span class="n">ttl_minutes</span><span class="o">=</span><span class="n">ttl_minutes</span><span class="p">,</span>
+                <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.enqueue_set_value">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.enqueue_set_value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enqueue_set_value</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">ttl_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">payload_extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enqueue a typed ``set_value`` command.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        target:</span>
+<span class="sd">            Target actuator/component.</span>
+<span class="sd">        value:</span>
+<span class="sd">            Desired numeric value.</span>
+<span class="sd">        unit:</span>
+<span class="sd">            Optional value unit.</span>
+<span class="sd">        reason:</span>
+<span class="sd">            Optional reason.</span>
+<span class="sd">        priority:</span>
+<span class="sd">            Command priority.</span>
+<span class="sd">        ttl_minutes:</span>
+<span class="sd">            Expiry TTL in minutes.</span>
+<span class="sd">        notes:</span>
+<span class="sd">            Optional notes.</span>
+<span class="sd">        payload_extra:</span>
+<span class="sd">            Optional payload overrides.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandResponse</span>
+<span class="sd">            Created command response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           cmd = client.enqueue_set_value(&quot;sensor-001&quot;, target=&quot;fan-speed&quot;, value=42.0, unit=&quot;percent&quot;)</span>
+<span class="sd">           print(cmd.id)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid command payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">typed_payload</span> <span class="o">=</span> <span class="n">SetValuePayload</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_payload_extra</span><span class="p">(</span><span class="n">typed_payload</span><span class="p">,</span> <span class="n">payload_extra</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_command</span><span class="p">(</span>
+            <span class="n">device_id</span><span class="p">,</span>
+            <span class="n">CommandCreate</span><span class="p">(</span>
+                <span class="n">command_type</span><span class="o">=</span><span class="s2">&quot;set_value&quot;</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+                <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span>
+                <span class="n">ttl_minutes</span><span class="o">=</span><span class="n">ttl_minutes</span><span class="p">,</span>
+                <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommandApiMixin.enqueue_custom">
+<a class="viewcode-back" href="../../api/sync_apis.html#vfarm_device_sdk.commands.CommandApiMixin.enqueue_custom">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enqueue_custom</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">ttl_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">payload_extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enqueue a typed ``custom`` command.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        device_id:</span>
+<span class="sd">            Device identifier.</span>
+<span class="sd">        action:</span>
+<span class="sd">            Custom action name.</span>
+<span class="sd">        params:</span>
+<span class="sd">            Optional action parameters.</span>
+<span class="sd">        reason:</span>
+<span class="sd">            Optional reason.</span>
+<span class="sd">        priority:</span>
+<span class="sd">            Command priority.</span>
+<span class="sd">        ttl_minutes:</span>
+<span class="sd">            Expiry TTL in minutes.</span>
+<span class="sd">        notes:</span>
+<span class="sd">            Optional notes.</span>
+<span class="sd">        payload_extra:</span>
+<span class="sd">            Optional payload overrides.</span>
+<span class="sd">        idempotency_key:</span>
+<span class="sd">            Optional idempotency key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CommandResponse</span>
+<span class="sd">            Created command response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           cmd = client.enqueue_custom(&quot;sensor-001&quot;, action=&quot;sync_profile&quot;, params={&quot;profile&quot;: &quot;eco&quot;})</span>
+<span class="sd">           print(cmd.command_type)</span>
+
+<span class="sd">        Common Errors</span>
+<span class="sd">        -------------</span>
+<span class="sd">        - ``400/422`` -&gt; ``ValidationError``: Invalid command payload.</span>
+<span class="sd">        - ``401`` -&gt; ``AuthenticationError``: Invalid farm API key.</span>
+<span class="sd">        - ``404`` -&gt; ``NotFoundError``: Device not found.</span>
+<span class="sd">        - ``5xx`` -&gt; ``VFarmApiError``: Server-side failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">typed_payload</span> <span class="o">=</span> <span class="n">CustomPayload</span><span class="p">(</span>
+            <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_payload_extra</span><span class="p">(</span><span class="n">typed_payload</span><span class="p">,</span> <span class="n">payload_extra</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_command</span><span class="p">(</span>
+            <span class="n">device_id</span><span class="p">,</span>
+            <span class="n">CommandCreate</span><span class="p">(</span>
+                <span class="n">command_type</span><span class="o">=</span><span class="s2">&quot;custom&quot;</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+                <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span>
+                <span class="n">ttl_minutes</span><span class="o">=</span><span class="n">ttl_minutes</span><span class="p">,</span>
+                <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">idempotency_key</span><span class="o">=</span><span class="n">idempotency_key</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">vfarm-device-sdk</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../error_codes/index.html">Error Codes Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docstring_template.html">Docstring Standard</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
