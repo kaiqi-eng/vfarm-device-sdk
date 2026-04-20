@@ -12,7 +12,8 @@ This repository includes:
 3. Confirm `render.yaml` is detected.
 4. Deploy the Blueprint.
 
-The service name in the blueprint is `vfarm-device-sdk-docs` and uses the free static plan.
+The service name in the blueprint is `vfarm-device-sdk-docs`.
+For static sites in Blueprint, do not set a `plan` field.
 
 ## 2. Create a Render Deploy Hook
 

@@ -2,7 +2,6 @@ services:
   - type: web
     runtime: static
     name: vfarm-device-sdk-docs
-    plan: free
     branch: main
     autoDeployTrigger: off
     buildCommand: pip install -e .[dev] && sphinx-build -W --keep-going -b html docs-site docs-site/_build/html
