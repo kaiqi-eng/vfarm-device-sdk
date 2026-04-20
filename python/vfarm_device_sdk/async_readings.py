@@ -14,6 +14,32 @@ from .models import (
 
 class AsyncReadingsApiMixin:
     async def get_latest_reading(self, sensor_id: str) -> LatestReadingResponse:
+        """
+        Get the latest reading for a sensor.
+
+        Parameters
+        ----------
+        sensor_id:
+            Sensor identifier.
+
+        Returns
+        -------
+        LatestReadingResponse
+            Latest sensor reading.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           latest = await client.get_latest_reading("sensor-001")
+           print(latest.id, latest.sensor_id)
+
+        Common Errors
+        -------------
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: No reading exists for sensor.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = await self._request("GET", "/api/v1/readings/latest", params={"sensor_id": sensor_id})
         return LatestReadingResponse.model_validate(data)
 
@@ -26,6 +52,41 @@ class AsyncReadingsApiMixin:
         limit: int = 100,
         status: str | None = None,
     ) -> ReadingsListResponse:
+        """
+        List historical readings for a sensor.
+
+        Parameters
+        ----------
+        sensor_id:
+            Sensor identifier.
+        from_time:
+            Optional lower time bound.
+        to_time:
+            Optional upper time bound.
+        limit:
+            Max records to return.
+        status:
+            Optional reading status filter.
+
+        Returns
+        -------
+        ReadingsListResponse
+            Historical readings page.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           history = await client.list_readings("sensor-001", limit=50)
+           print(history.total)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid query parameters.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Sensor not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         params: dict[str, object] = {
             "sensor_id": sensor_id,
             "limit": limit,
@@ -41,6 +102,35 @@ class AsyncReadingsApiMixin:
         return ReadingsListResponse.model_validate(data)
 
     async def get_reading_stats(self, sensor_id: str, *, window: StatsWindow = "24h") -> ReadingStatsResponse:
+        """
+        Get aggregated reading statistics for a time window.
+
+        Parameters
+        ----------
+        sensor_id:
+            Sensor identifier.
+        window:
+            Stats window label.
+
+        Returns
+        -------
+        ReadingStatsResponse
+            Aggregated statistics payload.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           stats = await client.get_reading_stats("sensor-001", window="24h")
+           print(stats.total_readings)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid window value.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Sensor not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = await self._request("GET", "/api/v1/readings/stats", params={"sensor_id": sensor_id, "window": window})
         return ReadingStatsResponse.model_validate(data)
 
@@ -51,6 +141,37 @@ class AsyncReadingsApiMixin:
         window: StatsWindow = "24h",
         recent_limit: int = 100,
     ) -> ReadingAnalyticsSnapshot:
+        """
+        Build a combined analytics snapshot from latest, recent, and stats queries.
+
+        Parameters
+        ----------
+        sensor_id:
+            Sensor identifier.
+        window:
+            Stats window label.
+        recent_limit:
+            Max records requested for recent history.
+
+        Returns
+        -------
+        ReadingAnalyticsSnapshot
+            Combined analytics view.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           snapshot = await client.get_readings_analytics("sensor-001", window="24h", recent_limit=100)
+           print(snapshot.sensor_id)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid query parameters.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Raised when stats/recent endpoints fail for missing sensor.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         try:
             latest = await self.get_latest_reading(sensor_id)
         except NotFoundError:

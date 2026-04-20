@@ -47,11 +47,20 @@ Chosen defaults:
   - for non-endpoint helpers: document runtime/validation exceptions explicitly.
 - Add dedicated "Error Codes Reference" pages grouped by endpoint and function.
 
-### Stage 4: Async parity pass
+### Stage 4: Async parity pass (split)
 
-- Document all async modules with mirrored structure and async-specific examples:
-  `async_*` modules + `async_client`.
-- Ensure every async function has example + exhaustive errors section aligned with sync counterpart behavior.
+#### Stage 4 - Part 1: Core async parity (implemented)
+
+- Document core async operational modules with mirrored structure and async-specific examples:
+  `async_devices`, `async_events`, `async_thresholds`, `async_device_capabilities`, `async_ingestion`, `async_readings`.
+- Ensure every function in Part 1 modules includes `Examples` + `Common Errors` sections aligned with sync counterpart behavior.
+- Add dedicated checker script: `scripts/check_stage4_part1_async_docs.py`.
+
+#### Stage 4 - Part 2: Remaining async parity + cross-linking (implemented)
+
+- Document remaining async modules and client surface:
+  `async_sensor_types`, `async_capabilities`, `async_capability_groups`, `async_automation`, `async_alerts`, `async_farms`, `async_commands`, `async_client`.
+- Ensure every Part 2 async function has example + exhaustive errors section aligned with sync counterpart behavior.
 - Add cross-links between sync and async variants on each function page.
 
 ### Stage 5: Polish, quality gates, and CI integration
@@ -62,6 +71,12 @@ Chosen defaults:
   - optional `linkcheck` (non-blocking initially, then blocking after cleanup).
 - Add "How to contribute docs" guide and a reusable per-function docstring snippet.
 - Add stage-completion checklist with objective acceptance criteria per module group.
+
+Implementation status:
+
+- CI docs job added in `.github/workflows/ci.yml` (`Docs Quality` job).
+- Docs contributor guide added at `docs/DOCS_CONTRIBUTING.md`.
+- Stage checklist added at `docs/SDK_DOCS_STAGE_CHECKLIST.md`.
 
 ## Public Interfaces / Types Changes
 

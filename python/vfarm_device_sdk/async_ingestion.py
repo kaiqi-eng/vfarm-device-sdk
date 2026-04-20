@@ -24,6 +24,37 @@ class AsyncIngestionApiMixin:
         auto_register: bool = False,
         idempotency_key: str | None = None,
     ) -> IngestResponse:
+        """
+        Submit an ingest request to the readings pipeline.
+
+        Parameters
+        ----------
+        payload:
+            Fully formed ingest request model.
+        auto_register:
+            Whether backend should auto-register missing devices.
+        idempotency_key:
+            Optional idempotency token sent as ``Idempotency-Key`` header.
+
+        Returns
+        -------
+        IngestResponse
+            Accepted ingestion response.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           response = await client.ingest(payload, auto_register=True)
+           print(response.id)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid ingest payload.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Referenced resource not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure or network issues.
+        """
         path = "/api/v1/ingest"
         params = {"auto_register": "true"} if auto_register else None
         data = await self._request(
@@ -57,6 +88,76 @@ class AsyncIngestionApiMixin:
         auto_register: bool = False,
         idempotency_key: str | None = None,
     ) -> IngestResponse:
+        """
+        Build and submit a standard temperature/humidity ingest payload.
+
+        Parameters
+        ----------
+        sensor_id:
+            Sensor/device identifier.
+        sensor_type:
+            Sensor type key.
+        farm_id:
+            Farm identifier.
+        rack_id:
+            Rack identifier.
+        node_id:
+            Node identifier.
+        firmware:
+            Firmware version string.
+        temperature_value:
+            Temperature reading value.
+        humidity_value:
+            Humidity reading value.
+        temperature_status:
+            Temperature status label.
+        humidity_status:
+            Humidity status label.
+        uptime_s:
+            Optional device uptime seconds.
+        wifi_rssi:
+            Optional Wi-Fi signal metric.
+        timestamp:
+            Optional sample timestamp; defaults to current UTC.
+        schema_version:
+            Payload schema version.
+        error_code:
+            Optional device-side error code.
+        error_message:
+            Optional device-side error message.
+        auto_register:
+            Whether backend should auto-register missing devices.
+        idempotency_key:
+            Optional idempotency token.
+
+        Returns
+        -------
+        IngestResponse
+            Accepted ingestion response.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           result = await client.ingest_reading(
+               sensor_id="sensor-001",
+               sensor_type="dht22",
+               farm_id="farm-a",
+               rack_id="rack-1",
+               node_id="node-1",
+               firmware="1.0.0",
+               temperature_value=24.2,
+               humidity_value=60.0,
+           )
+           print(result.id)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid reading payload.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Referenced resource not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure or network issues.
+        """
         payload = IngestRequest(
             schema_version=schema_version,
             sensor_id=sensor_id,
@@ -93,6 +194,31 @@ class AsyncIngestionApiMixin:
         return await self.ingest(payload, auto_register=auto_register, idempotency_key=idempotency_key)
 
     async def health(self) -> dict[str, Any]:
+        """
+        Read backend health status.
+
+        Parameters
+        ----------
+        None
+            This method takes no parameters.
+
+        Returns
+        -------
+        dict[str, Any]
+            Health payload returned by the API.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           health = await client.health()
+           print(health.get("status"))
+
+        Common Errors
+        -------------
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure or unexpected payload shape.
+        """
         data = await self._request("GET", "/api/v1/health")
         if not isinstance(data, dict):
             raise VFarmApiError("Unexpected health response", detail=data)

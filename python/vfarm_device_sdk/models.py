@@ -662,6 +662,31 @@ class AutomationCommandSpec(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _coerce_payload_for_command_type(cls, data: Any) -> Any:
+        """
+        Normalize ``payload`` into the typed model matching ``command_type``.
+
+        Parameters
+        ----------
+        data:
+            Raw model input, expected to include ``command_type`` and ``payload``.
+
+        Returns
+        -------
+        Any
+            Original input or normalized dict with typed ``payload``.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           spec = AutomationCommandSpec(command_type="set_state", payload={"target": "relay-1", "state": "on"})
+           print(type(spec.payload).__name__)
+
+        Common Errors
+        -------------
+        - ``N/A`` -> ``ValueError``: Provided ``payload`` model type conflicts with ``command_type``.
+        - ``N/A`` -> ``ValidationError``: ``payload`` shape is invalid for selected command type.
+        """
         if not isinstance(data, dict):
             return data
 

@@ -11,14 +11,98 @@ from .models import (
 
 class AsyncDeviceThresholdsApiMixin:
     async def list_device_thresholds(self, device_id: str) -> DeviceThresholdListResponse:
+        """
+        List all thresholds configured for a device.
+
+        Parameters
+        ----------
+        device_id:
+            Device identifier.
+
+        Returns
+        -------
+        DeviceThresholdListResponse
+            Threshold collection.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           thresholds = await client.list_device_thresholds("sensor-001")
+           print(thresholds.total)
+
+        Common Errors
+        -------------
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Device not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = await self._request("GET", f"/api/v1/devices/{device_id}/thresholds")
         return DeviceThresholdListResponse.model_validate(data)
 
     async def get_device_threshold(self, device_id: str, metric: str) -> DeviceThresholdResponse:
+        """
+        Get one threshold for a specific metric.
+
+        Parameters
+        ----------
+        device_id:
+            Device identifier.
+        metric:
+            Metric key, such as ``temperature``.
+
+        Returns
+        -------
+        DeviceThresholdResponse
+            Matching threshold record.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           threshold = await client.get_device_threshold("sensor-001", "temperature")
+           print(threshold.max_value)
+
+        Common Errors
+        -------------
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Device/metric threshold not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = await self._request("GET", f"/api/v1/devices/{device_id}/thresholds/{metric}")
         return DeviceThresholdResponse.model_validate(data)
 
     async def create_device_threshold(self, device_id: str, payload: DeviceThresholdCreate) -> DeviceThresholdResponse:
+        """
+        Create a threshold for a device metric.
+
+        Parameters
+        ----------
+        device_id:
+            Device identifier.
+        payload:
+            Threshold creation payload.
+
+        Returns
+        -------
+        DeviceThresholdResponse
+            Created threshold.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           created = await client.create_device_threshold("sensor-001", DeviceThresholdCreate(metric="temperature", max_value=30))
+           print(created.metric)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid threshold payload.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Device not found.
+        - ``409`` -> ``ConflictError``: Threshold already exists.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = await self._request(
             "POST",
             f"/api/v1/devices/{device_id}/thresholds",
@@ -32,6 +116,37 @@ class AsyncDeviceThresholdsApiMixin:
         metric: str,
         payload: DeviceThresholdUpdate,
     ) -> DeviceThresholdResponse:
+        """
+        Update an existing threshold.
+
+        Parameters
+        ----------
+        device_id:
+            Device identifier.
+        metric:
+            Metric key to update.
+        payload:
+            Partial threshold update payload.
+
+        Returns
+        -------
+        DeviceThresholdResponse
+            Updated threshold.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           updated = await client.update_device_threshold("sensor-001", "temperature", DeviceThresholdUpdate(max_value=31))
+           print(updated.max_value)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid threshold update payload.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Threshold not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         data = await self._request(
             "PATCH",
             f"/api/v1/devices/{device_id}/thresholds/{metric}",
@@ -40,6 +155,33 @@ class AsyncDeviceThresholdsApiMixin:
         return DeviceThresholdResponse.model_validate(data)
 
     async def delete_device_threshold(self, device_id: str, metric: str) -> None:
+        """
+        Delete a threshold for a metric.
+
+        Parameters
+        ----------
+        device_id:
+            Device identifier.
+        metric:
+            Metric key.
+
+        Returns
+        -------
+        None
+            Returns ``None`` on success.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           await client.delete_device_threshold("sensor-001", "temperature")
+
+        Common Errors
+        -------------
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Threshold not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         await self._request("DELETE", f"/api/v1/devices/{device_id}/thresholds/{metric}")
 
     async def set_metric_limits(
@@ -53,6 +195,45 @@ class AsyncDeviceThresholdsApiMixin:
         cooldown_minutes: int = 15,
         enabled: bool = True,
     ) -> DeviceThresholdResponse:
+        """
+        Upsert threshold limits for a generic metric.
+
+        Parameters
+        ----------
+        device_id:
+            Device identifier.
+        metric:
+            Metric key to configure.
+        min_value:
+            Optional lower bound.
+        max_value:
+            Optional upper bound.
+        severity:
+            Alert severity label.
+        cooldown_minutes:
+            Cooldown duration.
+        enabled:
+            Whether the rule is active.
+
+        Returns
+        -------
+        DeviceThresholdResponse
+            Created or updated threshold.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           threshold = await client.set_metric_limits("sensor-001", metric="temperature", min_value=18, max_value=30)
+           print(threshold.metric, threshold.enabled)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid threshold values.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Device not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         try:
             return await self.create_device_threshold(
                 device_id,
@@ -88,6 +269,43 @@ class AsyncDeviceThresholdsApiMixin:
         cooldown_minutes: int = 15,
         enabled: bool = True,
     ) -> DeviceThresholdResponse:
+        """
+        Upsert temperature threshold limits.
+
+        Parameters
+        ----------
+        device_id:
+            Device identifier.
+        min_c:
+            Optional minimum temperature in celsius.
+        max_c:
+            Optional maximum temperature in celsius.
+        severity:
+            Alert severity label.
+        cooldown_minutes:
+            Cooldown duration.
+        enabled:
+            Whether the rule is active.
+
+        Returns
+        -------
+        DeviceThresholdResponse
+            Created or updated temperature threshold.
+
+        Examples
+        --------
+        .. code-block:: python
+
+           threshold = await client.set_temperature_limits("sensor-001", min_c=18, max_c=30)
+           print(threshold.metric, threshold.max_value)
+
+        Common Errors
+        -------------
+        - ``400/422`` -> ``ValidationError``: Invalid threshold values.
+        - ``401`` -> ``AuthenticationError``: Invalid farm API key.
+        - ``404`` -> ``NotFoundError``: Device not found.
+        - ``5xx`` -> ``VFarmApiError``: Server-side failure.
+        """
         return await self.set_metric_limits(
             device_id,
             metric="temperature",
